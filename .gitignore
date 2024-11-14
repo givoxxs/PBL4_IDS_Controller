@@ -1,0 +1,25 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+**/__pycache__
+*.pyc
+
+# Môi trường ảo
+venv/
+.venv/
+
+# Các file cấu hình và tài nguyên cá nhân
+*.env
+*.db
+*.log
+
+# Thư mục thử nghiệm và log riêng cho Windows
+assets/
+
+# Các file tạm khác
+.DS_Store
+.idea/
+.vscode/
+*.sh
+threats.txt
