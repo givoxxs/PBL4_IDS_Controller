@@ -43,7 +43,7 @@ class Alert:
         return (
             self.timestamp, self.action, self.protocol, self.gid, self.sid,
             self.rev, self.msg, self.service, self.src_IP, self.src_Port,
-            self.dst_IP, self.dst_Port, self.occur, self.action_taken, self.id
+            self.dst_IP, self.dst_Port, self.occur, self.action_taken
         )
         
     def to_dict(self):

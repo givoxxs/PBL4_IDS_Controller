@@ -25,17 +25,6 @@ class AlertReader:
         return alerts
         
     def _parse_alert_line(self, line):
-        data = line.split(",")
-        try:
-            return (
-                data[0], data[1], data[2], int(data[3]), int(data[4]), int(data[5]), data[6],
-                data[7], data[8], int(data[9]) if data[9] else 0, data[10], int(data[11]) if data[11] else 0
-            )
-        except (IndexError, ValueError) as e: # Bắt lỗi nếu dữ liệu không hợp lệ
-            print(f"Error parsing alert line: {line} - {e}")
-            return None # Hoặc xử lý lỗi theo cách khác
-        
-    def _parse_alert_line(self, line):
         """Phân tích một dòng trong file alert_csv.txt."""
         data = line.split(",")
 
@@ -55,9 +44,13 @@ class AlertReader:
             msg = data[6].strip('"') # Loại bỏ dấu ngoặc kép
             service = data[7].strip()
             src_IP = data[8].strip()
-            src_Port = int(data[9]) if data[9] else None
+            # src_Port = int(data[9]) if data[9] else None
             dst_IP = data[10].strip()
-            dst_Port = int(data[11]) if data[11] else None
+            # dst_Port = int(data[11]) if data[11] else None
+            
+            src_Port = int(data[9].strip()) if data[9].strip() else None # Strip before checking
+            dst_Port = int(data[11].strip()) if data[11].strip() else None # Strip before checking
+
             occur = 1
             action_taken = 0
 
