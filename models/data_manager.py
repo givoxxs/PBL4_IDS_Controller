@@ -71,14 +71,24 @@ class DataManager:
                 where_clause = "WHERE " + " AND ".join([f"{key} = ?" for key in filter_criteria.keys()])
                 values = tuple(filter_criteria.values())
                 cursor.execute(f"SELECT * FROM alerts {where_clause}", values)
-                # cursor.execute(f"SELECT timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, occur, action_taken FROM alerts {where_clause}", values)
             else:
                  cursor.execute("SELECT * FROM alerts")
-                # cursor.execute("SELECT timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, occur, action_taken FROM alerts")
 
             rows = cursor.fetchall()
-            # return [Alert(**row) for row in rows]  # Trả về danh sách Alert
             return [Alert(*row) for row in rows]  # Trả về danh sách Alert
+        
+        """Lấy danh sách các threat từ database (sử dụng yield)."""
+        with sqlite3.connect(self.db_path) as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT src_IP, dst_IP, protocol, COUNT(*) AS occur, MAX(timestamp) as last_seen
+                FROM alerts
+                WHERE action_taken = 0
+                GROUP BY src_IP, dst_IP, protocol
+            """)
+            for row in cursor:  # Sử dụng yield
+                yield dict(row)
         
     def update_alert(self, alert):
         """Cập nhật alert trong database."""

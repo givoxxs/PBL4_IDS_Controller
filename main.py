@@ -5,6 +5,7 @@ from config import settings
 def main():
     controller = IDSController()
     view = MainWindow(controller)
+    view.show_frame("dashboard")
     view.run()
 
 if __name__ == "__main__":

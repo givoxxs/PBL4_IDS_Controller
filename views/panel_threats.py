@@ -33,16 +33,41 @@ class PanelThreats(tk.Frame):
 
 
     def display_threats(self):
-        """Hiển thị danh sách các mối đe dọa."""
+        # """Hiển thị danh sách các mối đe dọa."""
+        # threats = self.controller.get_threats()
+        # # Xóa dữ liệu cũ trên Treeview
+        # for i in self.tree.get_children():
+        #     self.tree.delete(i)
+
+        # # Hiển thị threats
+        # for threat in threats:
+        #     self.tree.insert("", tk.END, values = (threat["src_IP"], threat["dst_IP"], threat["protocol"], threat["occur"], threat['last_seen']))
+
+        """Hiển thị danh sách các mối đe dọa (tối ưu)."""
         threats = self.controller.get_threats()
-        # Xóa dữ liệu cũ trên Treeview
-        for i in self.tree.get_children():
-            self.tree.delete(i)
+        current_threats = {}  # Lưu trữ threat hiện có trên Treeview
 
-        # Hiển thị threats
+        # Lấy danh sách các item hiện có trên Treeview
+        for item in self.tree.get_children():
+            values = self.tree.item(item)['values']
+            key = (values[0], values[1], values[2])  # Tạo key từ src_IP, dst_IP, protocol
+            current_threats[key] = item
+
+        # Cập nhật Treeview
         for threat in threats:
-            self.tree.insert("", tk.END, values = (threat["src_IP"], threat["dst_IP"], threat["protocol"], threat["occur"], threat['last_seen']))
+            key = (threat["src_IP"], threat["dst_IP"], threat["protocol"])
+            if key in current_threats:
+                # Cập nhật threat hiện có
+                item = current_threats[key]
+                self.tree.item(item, values=(threat["src_IP"], threat["dst_IP"], threat["protocol"], threat["occur"], threat['last_seen']))
+                del current_threats[key]  # Xóa khỏi current_threats
+            else:
+                # Thêm threat mới
+                self.tree.insert("", tk.END, values=(threat["src_IP"], threat["dst_IP"], threat["protocol"], threat["occur"], threat['last_seen']))
 
+        # Xóa các threat không còn tồn tại
+        for item in current_threats.values():
+            self.tree.delete(item)
 
     def handle_threat_action(self, action):
         """Xử lý hành động của người dùng trên threat."""
