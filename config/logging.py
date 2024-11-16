@@ -15,7 +15,8 @@ def create_file_logger(logger_name, log_file_path, level=logging.DEBUG):
     file_handler = logging.handlers.RotatingFileHandler(
         log_file_path, maxBytes=10 * 1024 * 1024, backupCount=5  # 10MB, 5 file backup
     )
-    file_handler.setFormatter(logging.Formatter(log_format))
+    # file_handler.setFormatter(logging.Formatter(log_format,encoding='utf-8'))
+    file_handler.setFormatter(logging.Formatter(log_format)) 
     logger.addHandler(file_handler)
     return logger
 

@@ -6,7 +6,10 @@ import logging
 class Plotter:
     @staticmethod
     def plot_alerts_over_time(ax, alerts):
+        print("Plotting alerts over time")
         """Vẽ biểu đồ số lượng alert theo thời gian."""
+        # lấy 1000 alert gần nhất
+        alerts = alerts[-100    :]
         dates = []
         for alert in alerts:
             try:
@@ -19,7 +22,7 @@ class Plotter:
 
         # Xóa đồ thị cũ trước khi vẽ mới
         ax.clear()
-        ax.plot_date(dates, range(len(dates)), linestyle='solid', marker=None)
+        ax.plot_date(dates, range(len(dates)), linestyle='solid')
         ax.set_title('Alerts over time')
         ax.set_xlabel('Time')
         ax.set_ylabel('Number of alerts')
@@ -29,6 +32,7 @@ class Plotter:
         
     @staticmethod
     def get_top_attack_ips(alerts, top_n=10):
+        print("Getting top attack IPs")
         """Lấy top N IP tấn công."""
         src_ips = [alert.src_IP for alert in alerts]
         ip_counter = Counter(src_ips)
@@ -37,6 +41,7 @@ class Plotter:
 
     @staticmethod
     def plot_top_attack_ips(ax, alerts, top_n=10):
+        print("Plotting top attack IPs")
         """Vẽ biểu đồ top N IP tấn công."""
         src_ips = [alert.src_IP for alert in alerts]
         ip_counter = Counter(src_ips)
@@ -60,9 +65,10 @@ class Plotter:
 
     @staticmethod
     def plot_alert_types(ax, alerts):
+        print("Plotting alert types")
         """Vẽ biểu đồ loại tấn công."""
         protocols = [alert.protocol for alert in alerts]
-        protocol_counter = Counter(protocols)
+        protocol_counter = Counter(protocols) 
 
         ax.clear()
         ax.pie(protocol_counter.values(), labels=protocol_counter.keys(), autopct='%1.1f%%', startangle=140)
@@ -71,6 +77,7 @@ class Plotter:
 
     @staticmethod
     def get_top_rules_2(alerts, top_n=10):
+        print("Getting top rules")
         """Lấy top N rules bị kích hoạt nhiều nhất."""
         rules = [(alert.gid, alert.sid) for alert in alerts if alert.gid and alert.sid]
         rule_counter = Counter(rules)
@@ -80,6 +87,7 @@ class Plotter:
 
     @staticmethod
     def get_top_rules(alerts, top_n=10):
+        print("Getting top rules")
         """Lấy top N rules bị kích hoạt nhiều nhất."""
         rules = [(alert.gid, alert.sid) for alert in alerts if alert.gid and alert.sid]
         rule_counter = Counter(rules)
@@ -88,6 +96,7 @@ class Plotter:
 
     @staticmethod
     def plot_top_rules(ax, alerts, top_n=10):
+        print("Plotting top rules")
         """Vẽ biểu đồ top N rules bị kích hoạt nhiều nhất."""
         top_rules = Plotter.get_top_rules(alerts, top_n)
 

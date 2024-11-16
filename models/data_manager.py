@@ -51,6 +51,7 @@ class DataManager:
                     action_taken INTEGER
                 )             
             """)
+            print("Tạo bảng thành công")
             self.conn.commit() #
         except sqlite3.Error as e:
             logger.error(f"Lỗi khi tạo bảng: {e}", exc_info=True)
@@ -62,6 +63,7 @@ class DataManager:
         try:
             alerts = self.alert_reader.read_alerts()
             self.insert_alerts(alerts)
+            print("Khởi tạo database từ file thành công")
         except FileNotFoundError:
             logger.error(f"File {Settings.LOG_PATH} không tồn tại. Bỏ qua khởi tạo.", exc_info=True)
         except Exception as e:  # Bắt lỗi chung chung khác
@@ -76,6 +78,7 @@ class DataManager:
                 INSERT INTO alerts (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, occur, action_taken)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, [alert.to_tuple() for alert in alerts])
+            print("Thêm alerts vào db thành công")
             self.conn.commit()
         except sqlite3.Error as e:
             logger.error(f"Lỗi khi chèn alerts: {e}", exc_info=True)
@@ -93,6 +96,7 @@ class DataManager:
             else:
                 self.cursor.execute("SELECT * FROM alerts") # Lấy tất cả alert
             rows = self.cursor.fetchall()
+            print("Get alerts successfully")
             return [Alert(**row) for row in rows] # Dùng Alert(**row) để khởi tạo list alert
         except sqlite3.Error as e:
             logger.error(f"Lỗi khi lấy alerts: {e}", exc_info=True)
@@ -118,6 +122,7 @@ class DataManager:
                 GROUP BY src_IP, dst_IP, protocol
             """)
             rows = self.cursor.fetchall()
+            print("Get threats successfully")
             return [dict(row) for row in rows]
         except sqlite3.Error as e:
             logger.error(f"Lỗi khi lấy threats: {e}", exc_info=True)

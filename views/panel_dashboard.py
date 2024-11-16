@@ -4,11 +4,6 @@ from utils.plotter import Plotter
 from utils import check_services_status
 import matplotlib.pyplot as plt # type: ignore
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-import threading
-
-import logging
-
-logger = logging.getLogger(__name__)
 
 class PanelDashboard(tk.Frame):
     def __init__(self, parent, controller):
@@ -96,58 +91,25 @@ class PanelDashboard(tk.Frame):
         refresh_button = ttk.Button(self, text="Refresh", command=self.update_data)
         refresh_button.grid(row=2, column=0, columnspan=3, pady=(10,0))  # Thay đổi vị trí nút refresh
         
-    # def update_data(self):
-    #     """Cập nhật dữ liệu trên dashboard."""
-        
-    #     self.alerts = self.controller.get_alerts()
-    #     self.total_alerts_label.config(text=f"Total Alerts: {len(self.alerts)}")
-    #     unhandled_alerts = [alert for alert in self.alerts if not alert.action_taken]
-    #     self.unhandled_alerts_label.config(text=f"Unhandled Alerts: {len(unhandled_alerts)}")
-        
-    #     # Cập nhật tất cả các biểu đồ khi dữ liệu thay đổi
-    #     self.plot_alerts_time()
-    #     self.plot_top_ips()
-    #     self.plot_alert_types()
-    #     self.plot_top_rules()
-
-
-    #     self.update_top_ips_listbox()
-    #     self.update_top_rules_listbox()
-        
-    #     self.after(100000, self.update_data) # Cập nhật sau mỗi 60 giây
     def update_data(self):
         """Cập nhật dữ liệu trên dashboard."""
-
-        # Tạo một thread mới để thực hiện update_data_thread
-        thread = threading.Thread(target=self.update_data_thread)
-        thread.daemon = True  # Cho phép chương trình kết thúc ngay cả khi thread này vẫn đang chạy
-        thread.start()
-
-    def update_data_thread(self):
-        """Hàm cập nhật dữ liệu, chạy trong một thread riêng."""
-        try:
-            self.alerts = self.controller.get_alerts()
-            self.total_alerts_label.config(text=f"Total Alerts: {len(self.alerts)}")
-            unhandled_alerts = [alert for alert in self.alerts if not alert.action_taken]
-            self.unhandled_alerts_label.config(text=f"Unhandled Alerts: {len(unhandled_alerts)}")
-
-            # Sử dụng `self.root.after` để cập nhật giao diện một cách an toàn
-            self.root.after(0, self.plot_alerts_time)
-            self.root.after(0, self.plot_top_ips)
-            self.root.after(0, self.plot_alert_types)
-            self.root.after(0, self.plot_top_rules)
-            self.root.after(0, self.update_top_ips_listbox)
-            self.root.after(0, self.update_top_rules_listbox)
+        print ("Updating data...")
+        self.alerts = self.controller.get_alerts()
+        self.total_alerts_label.config(text=f"Total Alerts: {len(self.alerts)}")
+        unhandled_alerts = [alert for alert in self.alerts if not alert.action_taken]
+        self.unhandled_alerts_label.config(text=f"Unhandled Alerts: {len(unhandled_alerts)}")
+        
+        # Cập nhật tất cả các biểu đồ khi dữ liệu thay đổi
+        self.plot_alerts_time()
+        self.plot_top_ips()
+        self.plot_alert_types()
+        self.plot_top_rules()
 
 
-        except Exception as e:
-            logger.error(f"Lỗi trong update_data_thread: {e}", exc_info=True)
-            # Xử lý lỗi, ví dụ: hiển thị thông báo lỗi lên giao diện
-
-
-        # Lặp lại sau 60 giây. Nên thay `60000` (60 giây) bằng một thời gian ngắn hơn, ví dụ 3000, để UI response tốt hơn
-        self.after(60000, self.update_data)  # Update every 60 seconds
-
+        self.update_top_ips_listbox()
+        self.update_top_rules_listbox()
+        print("Data updated successfully")
+        self.after(300000, self.update_data) # Cập nhật sau mỗi 5 phút
                 
     def switch_chart(self, chart_type):
         for type, canvas in [("time", self.canvas_time), ("ips", self.canvas_ips), ("types", self.canvas_types), ("rules", self.canvas_rules)]:
@@ -159,8 +121,6 @@ class PanelDashboard(tk.Frame):
                 self.chart_buttons[type].config(relief=tk.RAISED)  # Raise button
         
     def plot_alerts_time(self):
-        # alerts = self.controller.get_alerts()
-        # Plotter.plot_alerts_over_time(alerts)
         
         """Vẽ biểu đồ số lượng alerts theo thời gian."""
 
@@ -168,9 +128,6 @@ class PanelDashboard(tk.Frame):
         self.canvas_time.draw()
 
     def plot_top_ips(self):
-        # alerts = self.controller.get_alerts()
-        # Plotter.plot_top_attack_ips(alerts)
-        
         # def plot_top_ips(self):
         """Vẽ biểu đồ top IP tấn công."""
 
@@ -178,16 +135,12 @@ class PanelDashboard(tk.Frame):
         self.canvas_ips.draw()
 
     def plot_alert_types(self):
-        # alerts = self.controller.get_alerts()
-        # Plotter.plot_alert_types(alerts)
         """Vẽ biểu đồ loại tấn công."""
 
         Plotter.plot_alert_types(self.ax_types, self.alerts)
         self.canvas_types.draw()
 
     def plot_top_rules(self):
-        # alerts = self.controller.get_alerts()
-        # Plotter.plot_top_rules(alerts)
         """Vẽ biểu đồ top rules."""
         Plotter.plot_top_rules(self.ax_rules, self.alerts)
         self.canvas_rules.draw()

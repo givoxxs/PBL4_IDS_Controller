@@ -55,7 +55,6 @@ class AlertReader:
 
             occur = 1
             action_taken = 0
-
             return (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, occur, action_taken)
 
 

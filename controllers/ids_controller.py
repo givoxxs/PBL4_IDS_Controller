@@ -9,6 +9,7 @@ class IDSController:
 
     def get_alerts(self, filter_criteria=None):
         """Lấy danh sách alerts, có thể lọc theo tiêu chí."""
+        print("GET_ALERTS IN IDS_CONTROLLER")
         return self.data_manager.get_alerts(filter_criteria)
 
     def handle_alert_action(self, alert: Alert, action: str):
@@ -58,7 +59,7 @@ class IDSController:
                     "dst_IP": threat_data['dst_IP'],
                     "protocol": threat_data['protocol']
                 }
-                
+                    
                 alerts = self.data_manager.get_alerts(filter_criteria=filter_criteria) # Truyền filter_criteria dưới dạng dict
                 for alert in alerts:
                     alert.action_taken = True
@@ -76,3 +77,7 @@ class IDSController:
                 }
         return self.data_manager.search_alerts(filter_criteria)
     
+    def collect_data_for_dashboard(self):
+        print("Collecting data for dashboard")
+        print("Getting alerts in collect_data_for_dashboard")
+        alerts = self.get_alerts()
