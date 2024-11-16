@@ -3,20 +3,36 @@ import sqlite3
 from models.alert import Alert
 from utils.alert_reader import AlertReader
 from config.settings import Settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 class DataManager:
     def __init__(self):
         self.db_path = os.path.join("data", "ids_data.db") 
+        
+        try:
+            self.conn = sqlite3.connect(self.db_path)
+            self.conn.row_factory = sqlite3.Row # dùng để đọc dữ liệu bằng key
+            self.cursor = self.conn.cursor()
+        except sqlite3.Error as e:
+            # print(f"Lỗi kết nối database: {e}")
+            logger.error(f"Lỗi kết nối database: {e}", exc_info=True)
+            
         self.alert_reader = AlertReader(Settings.LOG_PATH)
         self.create_tables()
         self.init_db_from_file()
         
+            
+    def __del__(self):
+        """Đóng kết nối database khi DataManager bị hủy."""
+        if hasattr(self, 'conn') and self.conn:
+            self.conn.close()
+        
     def create_tables(self):
-        '''
-        Tạo bảng nếu chưa tồn tại
-        '''
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute(""" 
+        '''Tạo bảng nếu chưa tồn tại'''
+        try:
+            self.cursor.execute(""" 
                 CREATE TABLE IF NOT EXISTS alerts (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp TEXT,
@@ -35,6 +51,10 @@ class DataManager:
                     action_taken INTEGER
                 )             
             """)
+            self.conn.commit() #
+        except sqlite3.Error as e:
+            logger.error(f"Lỗi khi tạo bảng: {e}", exc_info=True)
+            
     def init_db_from_file(self):
         '''
         Đọc dữ liệu từ file log và thêm vào db
@@ -43,84 +63,74 @@ class DataManager:
             alerts = self.alert_reader.read_alerts()
             self.insert_alerts(alerts)
         except FileNotFoundError:
-            print(f"File {Settings.LOG_PATH} không tồn tại. Bỏ qua khởi tạo.")
+            logger.error(f"File {Settings.LOG_PATH} không tồn tại. Bỏ qua khởi tạo.", exc_info=True)
         except Exception as e:  # Bắt lỗi chung chung khác
-            print(f"Lỗi khi khởi tạo database từ file: {e}")
+            logger.error(f"Lỗi khi khởi tạo database từ file: {e}", exc_info=True)
     
     def insert_alerts(self, alerts):
         '''
         Thêm danh sách alert vào db
         '''
-        with sqlite3.connect(self.db_path) as conn:
-            for alert in alerts:
-                conn.execute("""
-                    INSERT INTO alerts (
-                        timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, occur, action_taken
-                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, alert.to_tuple())
+        try:
+            self.cursor.executemany("""
+                INSERT INTO alerts (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, occur, action_taken)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """, [alert.to_tuple() for alert in alerts])
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logger.error(f"Lỗi khi chèn alerts: {e}", exc_info=True)
     
     def get_alerts(self, filter_criteria=None):
         """Lấy danh sách các Alert từ database (có thể lọc)."""
         print("GET_ALERTS")
         print("filter_criteria: ", filter_criteria)
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row # Cho phép truy cập dữ liệu bằng tên cột
-            cursor = conn.cursor()
-                
+        
+        try:
             if filter_criteria:
                 where_clause = "WHERE " + " AND ".join([f"{key} = ?" for key in filter_criteria.keys()])
                 values = tuple(filter_criteria.values())
-                cursor.execute(f"SELECT * FROM alerts {where_clause}", values)
+                self.cursor.execute(f"SELECT * FROM alerts {where_clause}", values)
             else:
-                 cursor.execute("SELECT * FROM alerts")
-
-            rows = cursor.fetchall()
-            return [Alert(*row) for row in rows]  # Trả về danh sách Alert
+                self.cursor.execute("SELECT * FROM alerts") # Lấy tất cả alert
+            rows = self.cursor.fetchall()
+            return [Alert(**row) for row in rows] # Dùng Alert(**row) để khởi tạo list alert
+        except sqlite3.Error as e:
+            logger.error(f"Lỗi khi lấy alerts: {e}", exc_info=True)
+            return []  # Trả về danh sách rỗng nếu có lỗi
         
-        """Lấy danh sách các threat từ database (sử dụng yield)."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute("""
+    def update_alert(self, alert):
+        """Cập nhật alert trong database."""
+        try:
+            self.cursor.execute("""
+                UPDATE alerts SET action_taken = ? WHERE id = ?
+            """, (alert.action_taken, alert.id))
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logger.error(f"Lỗi khi cập nhật alert: {e}", exc_info=True)
+            
+    def get_threats(self):
+        """Lấy danh sách các threat từ database (nhóm các alert)."""
+        try:
+            self.cursor.execute("""
                 SELECT src_IP, dst_IP, protocol, COUNT(*) AS occur, MAX(timestamp) as last_seen
                 FROM alerts
                 WHERE action_taken = 0
                 GROUP BY src_IP, dst_IP, protocol
             """)
-            for row in cursor:  # Sử dụng yield
-                yield dict(row)
-        
-    def update_alert(self, alert):
-        """Cập nhật alert trong database."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.execute("""
-                UPDATE alerts SET action_taken = ? WHERE id = ?
-            """, (alert.action_taken, alert.id))
-            conn.commit()
-            
-    def get_threats(self):
-        """Lấy danh sách các threat từ database (nhóm các alert)."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute("""
-                SELECT src_IP, dst_IP, protocol, COUNT(*) AS occur, MAX(timestamp) as last_seen  -- Thêm last_seen
-                FROM alerts
-                WHERE action_taken = 0
-                GROUP BY src_IP, dst_IP, protocol
-            """)
-            rows = cursor.fetchall()
+            rows = self.cursor.fetchall()
             return [dict(row) for row in rows]
+        except sqlite3.Error as e:
+            logger.error(f"Lỗi khi lấy threats: {e}", exc_info=True)
+            return []
         
     def search_alerts(self, filter_criteria):
         """Tìm kiếm alert theo filter_criteria."""
-        with sqlite3.connect(self.db_path) as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-
-            where_clause = "WHERE " + " AND ".join([f"{key} LIKE ?" for key in filter_criteria.keys()]) # Dùng LIKE cho tìm kiếm
-            values = tuple(['%' + value + '%' for value in filter_criteria.values()]) # Dùng wildcard %
-
-            cursor.execute(f"SELECT * FROM alerts {where_clause}", values)
-            rows = cursor.fetchall()
+        try:
+            where_clause = "WHERE " + " AND ".join([f"{key} LIKE ?" for key in filter_criteria.keys()])
+            values = tuple(['%' + value + '%' for value in filter_criteria.values()])
+            self.cursor.execute(f"SELECT * FROM alerts {where_clause}", values)
+            rows = self.cursor.fetchall()
             return [Alert(**row) for row in rows]
+        except sqlite3.Error as e:
+            logger.error(f"Lỗi khi tìm kiếm alerts: {e}", exc_info=True)
+            return []

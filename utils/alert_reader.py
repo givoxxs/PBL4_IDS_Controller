@@ -1,5 +1,7 @@
 from models.alert import Alert
+import logging
 
+logger = logging.getLogger(__name__)
 
 class AlertReader:
     def __init__(self, file_path):
@@ -16,10 +18,10 @@ class AlertReader:
                         alert = Alert(*alert_data)
                         alerts.append(alert)
         except FileNotFoundError:
-            print(f"File {self.file_path} không tồn tại.")
+            logger.error(f"File {self.file_path} không tồn tại.", exc_info=True)
             return None
         except Exception as e:
-            print(f"Lỗi khi đọc file: {e}")
+            logger.error(f"Lỗi khi đọc file: {e}", exc_info=True)
             return None
 
         return alerts
@@ -58,5 +60,5 @@ class AlertReader:
 
 
         except (ValueError, IndexError) as e:
-            print(f"Error parsing alert line: {line} - {e}")
+            logger.error(f"Error parsing alert line: {line} - {e}")
             return None

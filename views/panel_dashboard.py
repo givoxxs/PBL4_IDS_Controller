@@ -2,17 +2,24 @@ import tkinter as tk
 from tkinter import ttk
 from utils.plotter import Plotter
 from utils import check_services_status
+import matplotlib.pyplot as plt # type: ignore
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+import threading
+
+import logging
+
+logger = logging.getLogger(__name__)
 
 class PanelDashboard(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
-        self.update_data_id = None
-        self.check_snort_status_id = None
         self.controller = controller
+        self.alerts = []
         self.create_widgets()
         self.update_data()
         
     def create_widgets(self):
+        # Frame tổng quán
         summary_frame = ttk.LabelFrame(self, text="Summary")
         summary_frame.grid(row=0, column=0, padx=10, pady=10, sticky="nsew") # nsew: đàn hồi theo tất cả các hướng
         
@@ -26,35 +33,58 @@ class PanelDashboard(tk.Frame):
         chart_frame = ttk.LabelFrame(self, text="Charts")
         chart_frame.grid(row=1, column=0, padx=10, pady=10, sticky="nsew")
         
-        plot_time_button = ttk.Button(chart_frame, text="Plot alerts over time", command=self.plot_alerts_time)
-        plot_time_button.pack(pady=5)
-                
-        plot_ips_button = ttk.Button(chart_frame, text="Plot Top Attacking IPs", command=self.plot_top_ips)
-        plot_ips_button.pack(pady=5)
+        self.fig_time, self.ax_time = plt.subplots()
+        self.canvas_time = FigureCanvasTkAgg(self.fig_time, master=chart_frame)
+        self.canvas_time.get_tk_widget().pack(fill=tk.BOTH, expand=True)
         
-        plot_types_button = ttk.Button(chart_frame, text="Plot Alert Types", command=self.plot_alert_types)
-        plot_types_button.pack(pady=5)
+        self.fig_ips, self.ax_ips = plt.subplots()
+        self.canvas_ips = FigureCanvasTkAgg(self.fig_ips, master=chart_frame)
+        self.canvas_ips.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        self.canvas_ips.get_tk_widget().pack_forget() #  ẩn đi ban đầu
         
-        plot_rules_button = ttk.Button(chart_frame, text="Plot Top Alert Rules", command=self.plot_top_rules)
-        plot_rules_button.pack(pady=5)
+        self.fig_types, self.ax_types = plt.subplots()
+        self.canvas_types = FigureCanvasTkAgg(self.fig_types, master=chart_frame)
+        self.canvas_types.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        self.canvas_types.get_tk_widget().pack_forget()
+
+        self.fig_rules, self.ax_rules = plt.subplots()
+        self.canvas_rules = FigureCanvasTkAgg(self.fig_rules, master=chart_frame)
+        self.canvas_rules.get_tk_widget().pack(fill=tk.BOTH, expand=True)
+        self.canvas_rules.get_tk_widget().pack_forget()
         
-        # Frame trạng thái Snort
+        chart_buttons_frame = tk.Frame(chart_frame)
+        chart_buttons_frame.pack()
+        
+        self.chart_buttons = {}
+        chart_types = ["time", "ips", "types", "rules"]
+        for chart_type in chart_types:
+            button = tk.Button(chart_buttons_frame, text=f"Plot {chart_type}", command=lambda chart_type=chart_type: self.switch_chart(chart_type))
+            button.pack(side = tk.LEFT, padx=5)
+            self.chart_buttons[chart_type] = button
+        
+        # Frame trạng thái Snorts
         status_frame = ttk.LabelFrame(self, text="Snort Status")
         status_frame.grid(row=0, column=1, rowspan=2, padx=10, pady=10, sticky="nsew")
-        
+
         self.snort_status_label = ttk.Label(status_frame, text="Snort status: Checking...")
         self.snort_status_label.pack(pady=5)
-            
+
         self.check_snort_status()
         
         # Frame Top IP
         top_ips_frame = ttk.LabelFrame(self, text="Top Attacking IPs")
-        top_ips_frame.grid(row=0, column=2, padx=10, pady=10, sticky="nsew")
+        top_ips_frame.grid(row=0, column=2, padx=10, pady=(10, 0), sticky="nsew")
+        
+        self.top_ips_listbox = tk.Listbox(top_ips_frame)
+        self.top_ips_listbox.pack(fill=tk.BOTH, expand=True) # listbox sẽ expand
         
         
         # Frame Top Rules
         top_rules_frame = ttk.LabelFrame(self, text="Top Alert Rules")
-        top_rules_frame.grid(row=1, column=2, padx=10, pady=10, sticky="nsew")
+        top_rules_frame.grid(row=1, column=2, padx=10, pady=(10,0), sticky="nsew")
+        
+        self.top_rules_listbox = tk.Listbox(top_rules_frame)
+        self.top_rules_listbox.pack(fill=tk.BOTH, expand=True)
         
         self.columnconfigure(0, weight=2) # Cột biểu đồ rộng hơn
         self.columnconfigure(1, weight=1) # Cột trạng thái Snort nhỏ hơn
@@ -62,35 +92,105 @@ class PanelDashboard(tk.Frame):
         self.rowconfigure(0, weight=1)    # Hàng trên cùng và hàng dưới cùng có cùng chiều cao
         self.rowconfigure(1, weight=1)
         
+        # Nút Refresh
+        refresh_button = ttk.Button(self, text="Refresh", command=self.update_data)
+        refresh_button.grid(row=2, column=0, columnspan=3, pady=(10,0))  # Thay đổi vị trí nút refresh
+        
+    # def update_data(self):
+    #     """Cập nhật dữ liệu trên dashboard."""
+        
+    #     self.alerts = self.controller.get_alerts()
+    #     self.total_alerts_label.config(text=f"Total Alerts: {len(self.alerts)}")
+    #     unhandled_alerts = [alert for alert in self.alerts if not alert.action_taken]
+    #     self.unhandled_alerts_label.config(text=f"Unhandled Alerts: {len(unhandled_alerts)}")
+        
+    #     # Cập nhật tất cả các biểu đồ khi dữ liệu thay đổi
+    #     self.plot_alerts_time()
+    #     self.plot_top_ips()
+    #     self.plot_alert_types()
+    #     self.plot_top_rules()
+
+
+    #     self.update_top_ips_listbox()
+    #     self.update_top_rules_listbox()
+        
+    #     self.after(100000, self.update_data) # Cập nhật sau mỗi 60 giây
     def update_data(self):
         """Cập nhật dữ liệu trên dashboard."""
-        alerts = self.controller.get_alerts()
-        self.total_alerts_label.config(text=f"Total Alerts: {len(alerts)}")
 
-        unhandled_alerts = [alert for alert in alerts if not alert.action_taken]
-        self.unhandled_alerts_label.config(text=f"Unhandled Alerts: {len(unhandled_alerts)}")
-        
-        if self.update_data_id:  # Kiểm tra xem có id after nào đang chạy không
-            self.after_cancel(self.update_data_id)
+        # Tạo một thread mới để thực hiện update_data_thread
+        thread = threading.Thread(target=self.update_data_thread)
+        thread.daemon = True  # Cho phép chương trình kết thúc ngay cả khi thread này vẫn đang chạy
+        thread.start()
 
-        self.update_data_id = self.after(300000, self.update_data) # 5 phút
-        # self.after(100000, self.update_data) # Cập nhật sau mỗi 100 giây
+    def update_data_thread(self):
+        """Hàm cập nhật dữ liệu, chạy trong một thread riêng."""
+        try:
+            self.alerts = self.controller.get_alerts()
+            self.total_alerts_label.config(text=f"Total Alerts: {len(self.alerts)}")
+            unhandled_alerts = [alert for alert in self.alerts if not alert.action_taken]
+            self.unhandled_alerts_label.config(text=f"Unhandled Alerts: {len(unhandled_alerts)}")
+
+            # Sử dụng `self.root.after` để cập nhật giao diện một cách an toàn
+            self.root.after(0, self.plot_alerts_time)
+            self.root.after(0, self.plot_top_ips)
+            self.root.after(0, self.plot_alert_types)
+            self.root.after(0, self.plot_top_rules)
+            self.root.after(0, self.update_top_ips_listbox)
+            self.root.after(0, self.update_top_rules_listbox)
+
+
+        except Exception as e:
+            logger.error(f"Lỗi trong update_data_thread: {e}", exc_info=True)
+            # Xử lý lỗi, ví dụ: hiển thị thông báo lỗi lên giao diện
+
+
+        # Lặp lại sau 60 giây. Nên thay `60000` (60 giây) bằng một thời gian ngắn hơn, ví dụ 3000, để UI response tốt hơn
+        self.after(60000, self.update_data)  # Update every 60 seconds
+
+                
+    def switch_chart(self, chart_type):
+        for type, canvas in [("time", self.canvas_time), ("ips", self.canvas_ips), ("types", self.canvas_types), ("rules", self.canvas_rules)]:
+            if type == chart_type:
+                canvas.get_tk_widget().pack(fill=tk.BOTH, expand=True)  # Show chart
+                self.chart_buttons[type].config(relief=tk.SUNKEN)  # Depress button
+            else:
+                canvas.get_tk_widget().pack_forget()  # Hide chart
+                self.chart_buttons[type].config(relief=tk.RAISED)  # Raise button
         
     def plot_alerts_time(self):
-        alerts = self.controller.get_alerts()
-        Plotter.plot_alerts_over_time(alerts)
+        # alerts = self.controller.get_alerts()
+        # Plotter.plot_alerts_over_time(alerts)
+        
+        """Vẽ biểu đồ số lượng alerts theo thời gian."""
+
+        Plotter.plot_alerts_over_time(self.ax_time, self.alerts)
+        self.canvas_time.draw()
 
     def plot_top_ips(self):
-        alerts = self.controller.get_alerts()
-        Plotter.plot_top_attack_ips(alerts)
+        # alerts = self.controller.get_alerts()
+        # Plotter.plot_top_attack_ips(alerts)
+        
+        # def plot_top_ips(self):
+        """Vẽ biểu đồ top IP tấn công."""
+
+        Plotter.plot_top_attack_ips(self.ax_ips, self.alerts)
+        self.canvas_ips.draw()
 
     def plot_alert_types(self):
-        alerts = self.controller.get_alerts()
-        Plotter.plot_alert_types(alerts)
+        # alerts = self.controller.get_alerts()
+        # Plotter.plot_alert_types(alerts)
+        """Vẽ biểu đồ loại tấn công."""
+
+        Plotter.plot_alert_types(self.ax_types, self.alerts)
+        self.canvas_types.draw()
 
     def plot_top_rules(self):
-        alerts = self.controller.get_alerts()
-        Plotter.plot_top_rules(alerts)
+        # alerts = self.controller.get_alerts()
+        # Plotter.plot_top_rules(alerts)
+        """Vẽ biểu đồ top rules."""
+        Plotter.plot_top_rules(self.ax_rules, self.alerts)
+        self.canvas_rules.draw()
 
     def check_snort_status(self):
         """Kiểm tra trạng thái Snort và cập nhật lên giao diện."""
@@ -100,4 +200,19 @@ class PanelDashboard(tk.Frame):
         
         status_text = f"UFW Status:\n{ufw_status}\n\nSnort Status:\n{snort_status}"
         self.snort_status_label.config(text=status_text)
-        self.after(300000, self.check_snort_status) # Kiểm tra lại sau 100 iây
+        self.after(100000, self.check_snort_status) 
+        
+    def update_top_ips_listbox(self):
+        """Cập nhật Top Attacking IPs Listbox."""
+        top_ips = Plotter.get_top_attack_ips(self.alerts)
+        self.top_ips_listbox.delete(0, tk.END)  # Xóa dữ liệu cũ
+        for ip, count in top_ips.items():
+            self.top_ips_listbox.insert(tk.END, f"{ip}: {count}")
+
+
+    def update_top_rules_listbox(self):
+        """Cập nhật Top Alert Rules Listbox."""
+        top_rules = Plotter.get_top_rules_2(self.alerts)
+        self.top_rules_listbox.delete(0, tk.END)
+        for rule, count in top_rules.items():
+            self.top_rules_listbox.insert(tk.END, f"{rule}: {count}")

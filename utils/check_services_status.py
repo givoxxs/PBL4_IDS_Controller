@@ -1,4 +1,7 @@
 import subprocess
+import logging
+
+logger = logging.getLogger(__name__)
 
 def check_service_status():
     """Kiểm tra trạng thái của UFW và Snort."""
@@ -9,7 +12,8 @@ def check_service_status():
         ufw_status = subprocess.run(["sudo","systemctl", "status", "ufw"], capture_output=True, text=True)
         ufw_status = ufw_status.stdout
     except subprocess.CalledProcessError as e:
-        ufw_status = f"Error checking UFW status: {e.stderr}" # Lỗi nếu command trả về code != 0
+        # ufw_status = f"Error checking UFW status: {e.stderr}" # Lỗi nếu command trả về code != 0
+        logger.error(f"Error checking UFW status: {e.stderr}", exc_info=True)
     
     try:
         # Kiểm tra trạng thái Snort
