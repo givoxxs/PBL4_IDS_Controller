@@ -14,6 +14,24 @@ class MainWindow:
         self.root.title(Settings.APP_TITLE)
         self.root.geometry(f"{Settings.APP_WIDTH}x{Settings.APP_HEIGHT}")
         self.create_widgets()
+        self.data_manager = self.controller.data_manager
+        
+        self.data_manager.root = self.root # set giá trị root cho datamanager để chạy hàm after
+        self.data_manager.update_interval = self.data_manager._config.get("update_interval", 60) * 1000  # milliseconds
+
+        # Gọi hàm update_alerts_from_file() định kỳ
+        self.after_id = self.root.after(self.data_manager.update_interval, self.update_alerts_from_file)
+        
+    def update_alerts_from_file(self):
+        """Callback function for updating alerts."""
+        self.data_manager.update_alerts_from_file()  # Call update method in DataManager
+        self.after_id = self.root.after(self.data_manager.update_interval, self.update_alerts_from_file)
+
+
+    def __del__(self):
+        """Hủy bỏ lịch cập nhật khi đóng cửa sổ."""
+        if hasattr(self, 'after_id'):
+            self.root.after_cancel(self.after_id)
 
     def create_widgets(self):
         """Tạo các widget cho cửa sổ chính."""

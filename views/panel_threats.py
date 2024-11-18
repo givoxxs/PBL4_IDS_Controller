@@ -9,6 +9,8 @@ class PanelThreats(tk.Frame):
         self.controller = controller
         self.create_widgets()
         self.display_threats() # Hiển thị threats ban đầu
+        self.page = 1 # Khởi tạo page
+        self.per_page = 100 # mỗi trang 100 dòng
 
     def create_widgets(self):
         """Tạo các widget cho Panel Threats."""
@@ -32,7 +34,7 @@ class PanelThreats(tk.Frame):
             button.pack(side=tk.LEFT, padx=5, pady = 5)
 
 
-    def display_threats(self):
+    def display_threats(self, page = 1):
         # """Hiển thị danh sách các mối đe dọa."""
         # threats = self.controller.get_threats()
         # # Xóa dữ liệu cũ trên Treeview
@@ -46,6 +48,9 @@ class PanelThreats(tk.Frame):
         """Hiển thị danh sách các mối đe dọa (tối ưu)."""
         threats = self.controller.get_threats()
         current_threats = {}  # Lưu trữ threat hiện có trên Treeview
+        
+        self.page = page # set page hiện tại
+        self.update_pagination() # tính toán số trang
 
         # Lấy danh sách các item hiện có trên Treeview
         for item in self.tree.get_children():
@@ -86,3 +91,32 @@ class PanelThreats(tk.Frame):
             result = self.controller.handle_threat_action(threat_dict, action)  # Gọi controller để xử lý
             print(result) # or show messagebox
             self.display_threats() # update treeview
+            
+    def update_pagination(self):
+        """Cập nhật thông tin phân trang."""
+
+        total_threats = self.controller.get_total_threats()  # Lấy tổng số threats
+        total_pages = (total_threats + self.per_page - 1) // self.per_page  # Tính tổng số trang
+        self.page_label.config(text=f"Page {self.page}/{total_pages}")
+
+        # Enable/disable prev/next buttons
+        self.prev_button.config(state=tk.NORMAL if self.page > 1 else tk.DISABLED)
+        self.next_button.config(state=tk.NORMAL if self.page < total_pages else tk.DISABLED)
+        
+    # Thêm các hàm prev_page, next_page tương tự như PanelLogs
+    def prev_page(self):
+        """Chuyển đến trang trước."""
+        if self.page > 1:
+            self.page -= 1
+            self.display_threats(self.page) # Refresh data
+            self.update_pagination() # Update buttons
+    
+    def next_page(self):
+        """Chuyển đến trang sau."""
+        total_threats = self.controller.get_total_threats()
+        total_pages = (total_threats + self.per_page - 1) // self.per_page
+        if self.page < total_pages:
+            self.page += 1
+            self.display_threats(self.page)
+            self.update_pagination()
+        
