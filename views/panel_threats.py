@@ -7,10 +7,10 @@ class PanelThreats(tk.Frame):
     def __init__(self, parent, controller):
         super().__init__(parent)
         self.controller = controller
-        self.create_widgets()
-        self.display_threats() # Hiển thị threats ban đầu
         self.page = 1 # Khởi tạo page
         self.per_page = 100 # mỗi trang 100 dòng
+        self.create_widgets()
+        self.display_threats() # Hiển thị threats ban đầu
 
     def create_widgets(self):
         """Tạo các widget cho Panel Threats."""
@@ -22,10 +22,20 @@ class PanelThreats(tk.Frame):
             self.tree.heading(col, text=col)
             self.tree.column(col, width=100)
         self.tree.pack(fill="both", expand=True)
-
-        # Frame chứa các nút bấm
+        
+        # Frame chứa các nút bấm và phân trang
         button_frame = tk.Frame(self)
         button_frame.pack()
+
+
+        self.prev_button = ttk.Button(button_frame, text="Previous", command=self.prev_page, state = tk.DISABLED) # vô hiệu hóa ban đầu
+        self.prev_button.pack(side = tk.LEFT)
+
+        self.page_label = tk.Label(button_frame, text="Page 1/1") # Thêm page_label
+        self.page_label.pack(side=tk.LEFT)
+
+        self.next_button = ttk.Button(button_frame, text="Next", command=self.next_page)
+        self.next_button.pack(side = tk.LEFT)
 
 
         actions = ["safe", "ignore", "limit", "block"]

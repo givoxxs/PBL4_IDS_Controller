@@ -7,25 +7,20 @@ from views.panel_config import PanelConfig
 from views.panel_dashboard import PanelDashboard # Import PanelDashboard
 from config.settings import Settings
 
-class MainWindow:
-    def __init__(self, controller):
+class MainWindow(tk.Frame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
         self.controller = controller
-        self.root = tk.Tk()
+        self.root = parent
         self.root.title(Settings.APP_TITLE)
         self.root.geometry(f"{Settings.APP_WIDTH}x{Settings.APP_HEIGHT}")
         self.create_widgets()
-        self.data_manager = self.controller.data_manager
-        
-        self.data_manager.root = self.root # set giá trị root cho datamanager để chạy hàm after
-        self.data_manager.update_interval = self.data_manager._config.get("update_interval", 60) * 1000  # milliseconds
-
-        # Gọi hàm update_alerts_from_file() định kỳ
-        self.after_id = self.root.after(self.data_manager.update_interval, self.update_alerts_from_file)
         
     def update_alerts_from_file(self):
         """Callback function for updating alerts."""
-        self.data_manager.update_alerts_from_file()  # Call update method in DataManager
-        self.after_id = self.root.after(self.data_manager.update_interval, self.update_alerts_from_file)
+        self.controller.data_manager.update_alerts_from_file()
+        self.refresh_data() # Refresh all panels
+        self.after_id = self.after(self.controller.data_manager.update_interval, self.update_alerts_from_file)
 
 
     def __del__(self):
@@ -76,7 +71,19 @@ class MainWindow:
         frame = self.frames.get(frame_name)
         if frame:
             self.notebook.select(frame)
+            
+    def refresh_data(self):
+        """Refresh data and update panels."""
+        self.frames["logs"].display_alerts(self.frames["logs"].current_protocol_filter)
+        self.frames["threats"].display_threats()
+        self.frames['dashboard'].update_data()
 
     def run(self):
         """Chạy ứng dụng."""
-        self.root.mainloop()
+        self.data_manager = self.controller.data_manager
+        self.data_manager.root = self  # set root là chính MainWindow
+
+        # Gọi hàm update_alerts_from_file() định kỳ
+        self.data_manager.update_interval = self.data_manager._config.get("update_interval", 60) * 1000
+        self.after_id = self.after(self.data_manager.update_interval, self.update_alerts_from_file)
+        self.mainloop()

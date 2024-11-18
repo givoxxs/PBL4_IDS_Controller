@@ -3,9 +3,10 @@ from utils.file_modifier import FileModifier
 from models.data_manager import DataManager
 
 class AlertService:
-    def __init__(self):
+    def __init__(self, root):
+        self.root = root
         self.file_modifier = FileModifier()
-        self.data_manager = DataManager()
+        self.data_manager = DataManager(root)
         
     def safe_alert(self, alert: Alert):
         new_rule = f"pass {alert.protocol.lower()} {alert.src_IP} any -> {alert.dst_IP} any (msg:\"Allowed by user\"; sid:{self.file_modifier.get_sid()};)"

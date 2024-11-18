@@ -3,9 +3,10 @@ from models.alert import Alert
 from services.alert_service import AlertService
 
 class IDSController:
-    def __init__(self):
-        self.data_manager = DataManager()
-        self.alert_service = AlertService()
+    def __init__(self, root):
+        self.root = root
+        self.data_manager = DataManager(root)
+        self.alert_service = AlertService(root)
 
     def get_alerts(self, filter_criteria=None, page=1, per_page=100):  # Thêm tham số page và per_page
         """Lấy danh sách alerts, có thể lọc theo tiêu chí và phân trang."""
@@ -50,6 +51,10 @@ class IDSController:
 
         offset = (page-1) * per_page
         return self.data_manager.get_threats(limit=per_page, offset=offset)
+    
+    def get_total_threats(self):
+        """Lấy tổng số threats từ DataManager."""
+        return len(self.data_manager.get_threats())
     
     def handle_threat_action(self, threat_data: dict, action: str):
         """Xử lý hành động trên threat (safe, ignore, limit, block)."""

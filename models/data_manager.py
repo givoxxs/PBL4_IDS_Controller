@@ -113,20 +113,6 @@ class DataManager:
             logger.error(f"File {Settings.LOG_PATH} không tồn tại. Bỏ qua khởi tạo.", exc_info=True)
         except Exception as e:
             logger.error(f"Lỗi khi khởi tạo database từ file: {e}", exc_info=True)
-    
-    # def insert_alerts(self, alerts):
-    #     '''
-    #     Thêm danh sách alert vào db
-    #     '''
-    #     try:
-    #         self.cursor.executemany("""
-    #             INSERT INTO alerts (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, occur, action_taken)
-    #             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    #         """, [alert.to_tuple() for alert in alerts])
-    #         print("Thêm alerts vào db thành công")
-    #         self.conn.commit()
-    #     except sqlite3.Error as e:
-    #         logger.error(f"Lỗi khi chèn alerts: {e}", exc_info=True)
             
     def insert_alerts(self, alerts):
         """Thêm danh sách alert vào db và cập nhật cache."""
@@ -147,31 +133,10 @@ class DataManager:
             
         except sqlite3.Error as e:
             logger.error(f"Lỗi khi chèn alerts: {e}", exc_info=True)
-    
-    # def get_alerts(self, filter_criteria=None):
-    #     """Lấy danh sách các Alert từ database (có thể lọc)."""
-    #     print("GET_ALERTS")
-    #     print("filter_criteria: ", filter_criteria)
-        
-    #     try:
-    #         if filter_criteria:
-    #             where_clause = "WHERE " + " AND ".join([f"{key} = ?" for key in filter_criteria.keys()])
-    #             values = tuple(filter_criteria.values())
-    #             self.cursor.execute(f"SELECT * FROM alerts {where_clause}", values)
-    #         else:
-    #             self.cursor.execute("SELECT * FROM alerts") # Lấy tất cả alert
-    #         rows = self.cursor.fetchall()
-    #         print("Get alerts successfully")
-    #         return [Alert(*row) for row in rows] # Dùng Alert(**row) để khởi tạo list alert
-    #         # việc trả về *row và **row: *row trả về tuple, **row trả về dict
-    #     except sqlite3.Error as e:
-    #         logger.error(f"Lỗi khi lấy alerts: {e}", exc_info=True)
-    #         return []  # Trả về danh sách rỗng nếu có lỗi
         
     def get_alerts(self, filter_criteria=None, limit=None, offset=None):
         
         logger.debug(f"get_alerts called with filter_criteria: {filter_criteria}, limit: {limit}, offset: {offset}") # logging debug
-        print("GET_ALERTS")
         # thêm đoạn code này để get_alert nhanh hơn
         if filter_criteria == None: # không cần lọc
             if limit and offset: # có phân trang
@@ -211,22 +176,6 @@ class DataManager:
             if cached_alert.id == alert.id:
                 self.alerts[i] = alert # update alert trong cache
                 break
-            
-    # def get_threats(self):
-    #     """Lấy danh sách các threat từ database (nhóm các alert)."""
-    #     try:
-    #         self.cursor.execute("""
-    #             SELECT src_IP, dst_IP, protocol, COUNT(*) AS occur, MAX(timestamp) as last_seen
-    #             FROM alerts
-    #             WHERE action_taken = 0
-    #             GROUP BY src_IP, dst_IP, protocol
-    #         """)
-    #         rows = self.cursor.fetchall()
-    #         print("Get threats successfully")
-    #         return [dict(row) for row in rows]
-    #     except sqlite3.Error as e:
-    #         logger.error(f"Lỗi khi lấy threats: {e}", exc_info=True)
-    #         return []
     
     def get_threats(self, limit=None, offset=None):  # Thêm limit và offset
         """Lấy danh sách các threat từ database (nhóm các alert) và phân trang."""
@@ -245,18 +194,6 @@ class DataManager:
         except sqlite3.Error as e:
             logger.error(f"Lỗi khi lấy threats: {e}", exc_info=True)
             return []
-        
-    # def search_alerts(self, filter_criteria):
-    #     """Tìm kiếm alert theo filter_criteria."""
-    #     try:
-    #         where_clause = "WHERE " + " AND ".join([f"{key} LIKE ?" for key in filter_criteria.keys()])
-    #         values = tuple(['%' + value + '%' for value in filter_criteria.values()])
-    #         self.cursor.execute(f"SELECT * FROM alerts {where_clause}", values)
-    #         rows = self.cursor.fetchall()
-    #         return [Alert(**row) for row in rows]
-    #     except sqlite3.Error as e:
-    #         logger.error(f"Lỗi khi tìm kiếm alerts: {e}", exc_info=True)
-    #         return []
         
     def search_alerts(self, filter_criteria, limit=None, offset=None):  # Thêm limit và offset
         """Tìm kiếm alert theo filter_criteria và phân trang."""
