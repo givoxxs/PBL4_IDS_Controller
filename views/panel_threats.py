@@ -45,17 +45,7 @@ class PanelThreats(tk.Frame):
 
 
     def display_threats(self, page = 1):
-        # """Hiển thị danh sách các mối đe dọa."""
-        # threats = self.controller.get_threats()
-        # # Xóa dữ liệu cũ trên Treeview
-        # for i in self.tree.get_children():
-        #     self.tree.delete(i)
-
-        # # Hiển thị threats
-        # for threat in threats:
-        #     self.tree.insert("", tk.END, values = (threat["src_IP"], threat["dst_IP"], threat["protocol"], threat["occur"], threat['last_seen']))
-
-        """Hiển thị danh sách các mối đe dọa (tối ưu)."""
+        """Hiển thị danh sách các mối đe dọa."""
         threats = self.controller.get_threats()
         current_threats = {}  # Lưu trữ threat hiện có trên Treeview
         

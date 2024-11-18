@@ -27,7 +27,7 @@ class Plotter:
         ax.set_ylabel('Number of alerts')
         ax.xaxis.set_major_locator(mdates.AutoDateLocator()) # Tự động chọn vị trí đặt label
         ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d %H:%M:%S')) # Định dạng label thời gian
-        plt.setp(ax.get_xticklabels(), rotation=0, ha="right") # Xoay label và canh phải
+        plt.setp(ax.get_xticklabels(), rotation=30, ha="right") # Xoay label và canh phải
         
     @staticmethod
     def get_top_attack_ips(alerts, top_n=10):
@@ -57,7 +57,7 @@ class Plotter:
         ax.set_xlabel('IP Address')
         ax.set_ylabel('Number of attacks')
         ax.set_title(f'Top {top_n} Attacking IPs')
-        plt.setp(ax.get_xticklabels(), rotation=0, ha="right")
+        plt.setp(ax.get_xticklabels(), rotation=30, ha="right")
 
 
     @staticmethod
@@ -105,4 +105,4 @@ class Plotter:
         ax.set_xlabel('Rule (GID:SID)')
         ax.set_ylabel('Occurrences')
         ax.set_title(f'Top {top_n} Triggered Rules')
-        plt.setp(ax.get_xticklabels(), rotation=0, ha="right")
+        plt.setp(ax.get_xticklabels(), rotation=30, ha="right")

@@ -41,10 +41,6 @@ class IDSController:
         except Exception as e: # Bắt lỗi toàn cục
             print(f"Lỗi trong IDSController.handle_alert_action: {e}")
             return f"An error occurred: {e}"
-
-    # def get_threats(self):
-    #     """Lấy danh sách threats từ DataManager."""
-    #     return self.data_manager.get_threats()
     
     def get_threats(self, page=1, per_page=100): # phân trang cho threat
         """Lấy danh sách threats từ DataManager."""
@@ -96,13 +92,6 @@ class IDSController:
                 }
         offset = (page - 1) * per_page
         return self.data_manager.search_alerts(filter_criteria, limit=per_page, offset=offset)
-    
-    # def search_alerts(self, search_term):
-    #     """Tìm kiếm alert theo search_term."""
-    #     filter_criteria = { # Tìm kiếm theo msg
-    #             'msg': f"%{search_term}%",
-    #             }
-    #     return self.data_manager.search_alerts(filter_criteria)
     
     def get_total_search_result(self, search_term):
         filter_criteria = {'msg': f"%{search_term}%"}

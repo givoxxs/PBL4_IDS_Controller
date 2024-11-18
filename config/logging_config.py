@@ -16,12 +16,6 @@ def setup_logging(log_level=logging.INFO, log_format='%(asctime)s - %(name)s - %
     # Tạo logger root
     logger = logging.getLogger() # root logger
     logger.setLevel(log_level)
-
-    # # Tạo console handler (nếu chưa có)
-    # if not any(isinstance(handler, logging.StreamHandler) for handler in logger.handlers):
-    #     console_handler = logging.StreamHandler(sys.stdout) # Ghi log ra console
-    #     console_handler.setFormatter(logging.Formatter(log_format))
-    #     logger.addHandler(console_handler)
     
     # tạo console handler cho error và info
     console_handler = logging.StreamHandler(sys.stdout) # Ghi log ra console

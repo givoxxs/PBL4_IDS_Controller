@@ -36,17 +36,6 @@ class PanelLogs(tk.Frame):
 
         self.next_button = ttk.Button(pagination_frame, text="Next", command=self.next_page)
         self.next_button.pack(side = tk.LEFT)
-
-
-    # def display_alerts(self, protocol_filter = "Tất cả"):
-    #     """Hiển thị alerts trong Treeview."""
-    #     alerts = self.controller.get_alerts()  # Lấy dữ liệu từ controller
-    #     alerts = alerts[-100:]  # Chỉ lấy 100 dòng cuối cùng
-    #     for i in self.tree.get_children(): # Xóa dữ liệu cũ (nếu có)
-    #         self.tree.delete(i)
-
-    #     for alert in alerts:
-    #         self.tree.insert("", tk.END, values=alert.to_tuple())
             
     def display_alerts(self, protocol_filter = "Tất cả"): # thêm tham số lọc
         # ... (xóa dữ liệu cũ trong tree)
@@ -72,14 +61,6 @@ class PanelLogs(tk.Frame):
             
     def update_pagination(self, filter_criteria=None):
         """Cập nhật thông tin phân trang."""
-        # if hasattr(self, 'current_protocol_filter'):  # Kiểm tra xem current_protocol_filter đã được gán giá trị chưa
-        #     if self.current_protocol_filter != "Tất cả": # "Tất cả" không cần lọc
-        #         filter_criteria = {"protocol": self.current_protocol_filter}
-        #     else:
-        #         filter_criteria = None
-        # else:
-        #     filter_criteria = None  # Trường hợp chưa có filter
-        
         total_alerts = self.controller.get_total_alerts(filter_criteria=filter_criteria)  # tính tổng alert với filter hiện tại
         total_pages = (total_alerts + self.per_page - 1) // self.per_page  # Tính tổng số trang
         self.page_label.config(text=f"Page {self.page}/{total_pages}")
@@ -163,14 +144,6 @@ class PanelLogs(tk.Frame):
     
     def update_search_pagination(self, filter_criteria=None):
         """Cập nhật thông tin phân trang khi tìm kiếm."""
-        # total_alerts = self.controller.get_total_search_result(self.current_search_term)
-        # total_pages = (total_alerts + self.per_page - 1) // self.per_page
-        # self.page_label.config(text=f"Page {self.page}/{total_pages}")
-
-        # # Enable/disable prev/next buttons
-        # self.prev_button.config(state=tk.NORMAL if self.page > 1 else tk.DISABLED)
-        # self.next_button.config(state=tk.NORMAL if self.page < total_pages else tk.DISABLED)
-        
         
         total_alerts = self.controller.get_total_alerts(filter_criteria=filter_criteria)  # Truyền filter_criteria
         total_pages = (total_alerts + self.per_page - 1) // self.per_page

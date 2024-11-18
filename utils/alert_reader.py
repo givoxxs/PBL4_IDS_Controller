@@ -20,12 +20,6 @@ class AlertReader:
                         if alert_data:
                             alert = Alert(*alert_data)
                             alerts.append(alert)
-                # lines = file.readlines()
-                # for line in lines[1:]:  # Bỏ qua dòng header (nếu có)
-                #     alert_data = self._parse_alert_line(line.strip())
-                #     if alert_data:
-                #         alert = Alert(*alert_data)
-                #         alerts.append(alert)
             return alerts
         except FileNotFoundError:
             logger.error(f"File {self.file_path} không tồn tại.", exc_info=True)
