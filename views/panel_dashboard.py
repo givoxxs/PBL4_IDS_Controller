@@ -147,7 +147,7 @@ class PanelDashboard(tk.Frame):
 
     def check_snort_status(self):
         """Kiểm tra trạng thái Snort và cập nhật lên giao diện."""
-        ufw_status, snort_status = check_services_status()
+        ufw_status, snort_status = check_service_status()
         # ufw_status = "Status: active"
         # snort_status = "Status: active"
         
