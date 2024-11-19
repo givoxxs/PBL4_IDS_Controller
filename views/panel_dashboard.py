@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 from utils.plotter import Plotter
-from utils import check_services_status
+from utils.check_services_status import check_service_status
 import matplotlib.pyplot as plt # type: ignore
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
