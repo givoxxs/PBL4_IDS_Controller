@@ -17,7 +17,7 @@ def check_service_status():
     
     try:
         # Kiểm tra trạng thái Snort
-        snort_status = subprocess.run(["sudo","systemctl", "status", "snort"], capture_output=True, text=True)
+        snort_status = subprocess.run(["sudo","systemctl", "status", "snort3-nids"], capture_output=True, text=True)
         snort_status = snort_status.stdout
     except subprocess.CalledProcessError as e:
         snort_status = f"Error checking Snort status: {e.stderr}"
