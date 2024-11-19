@@ -1,28 +1,32 @@
 from models.alert import Alert
+import logging
+import os
 
+logger = logging.getLogger(__name__)
 
 class AlertReader:
     def __init__(self, file_path):
         self.file_path = file_path
 
-    def read_alerts(self, month="all"):
+    def read_alerts(self, last_update_time=0):
         alerts = []
         try:
             with open(self.file_path, "r", encoding="utf-8") as file: # Thêm encoding="utf-8" để xử lý các ký tự đặc biệt
-                lines = file.readlines()
-                for line in lines[1:]:  # Bỏ qua dòng header (nếu có)
-                    alert_data = self._parse_alert_line(line.strip())
-                    if alert_data:
-                        alert = Alert(*alert_data)
-                        alerts.append(alert)
+                file_update_time = os.path.getmtime(self.file_path)
+                if file_update_time > last_update_time: # chỉ đọc nếu file đã thay đổi
+                    next(file) # skip header line
+                    for line in file:
+                        alert_data = self._parse_alert_line(line.strip())
+                        if alert_data:
+                            alert = Alert(*alert_data)
+                            alerts.append(alert)
+            return alerts
         except FileNotFoundError:
-            print(f"File {self.file_path} không tồn tại.")
+            logger.error(f"File {self.file_path} không tồn tại.", exc_info=True)
             return None
         except Exception as e:
-            print(f"Lỗi khi đọc file: {e}")
+            logger.error(f"Lỗi khi đọc file: {e}", exc_info=True)
             return None
-
-        return alerts
         
     def _parse_alert_line(self, line):
         """Phân tích một dòng trong file alert_csv.txt."""
@@ -31,6 +35,7 @@ class AlertReader:
         # Kiểm tra số lượng trường dữ liệu.  Điều chỉnh số 12 nếu file của bạn có số trường khác.
         if len(data) < 12:  # Cho phép số trường ít hơn 12
             print(f"Invalid alert line: {line}. Not enough fields.")
+            logger.error(f"Invalid alert line: {line}. Not enough fields.")
             return None
 
         try:
@@ -53,10 +58,9 @@ class AlertReader:
 
             occur = 1
             action_taken = 0
-
             return (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, occur, action_taken)
 
 
         except (ValueError, IndexError) as e:
-            print(f"Error parsing alert line: {line} - {e}")
+            logger.error(f"Error parsing alert line: {line} - {e}")
             return None
