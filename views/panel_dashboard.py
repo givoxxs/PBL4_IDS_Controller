@@ -101,7 +101,7 @@ class PanelDashboard(tk.Frame):
         self.columnconfigure(1, weight=1)  # Snort Status
         self.columnconfigure(2, weight=1)  # Top IPs/Rules
         self.rowconfigure(0, weight=1)  # Top row
-        self.rowconfigure(1, weight=2)  # Bottom row
+        self.rowconfigure(1, weight=3)  # Bottom row
 
         # Refresh Button
         refresh_button = ttk.Button(self, text="Refresh", command=self.refresh_data)
