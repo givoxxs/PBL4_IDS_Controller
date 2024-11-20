@@ -67,10 +67,6 @@ class PanelDashboard(tk.Frame):
             button.pack(side=tk.LEFT, padx=5)
             self.chart_buttons[chart_type] = button
 
-        # Frame Snort Status
-        status_frame = ttk.LabelFrame(self, text="Snort & UFW Status")
-        status_frame.grid(row=0, column=1, rowspan=2, padx=10, pady=10, sticky="nsew")
-        
         # Frame Snort Status - use a Text widget instead of Label
         status_frame = ttk.LabelFrame(self, text="Snort & UFW Status")
         status_frame.grid(row=0, column=1, rowspan=2, padx=10, pady=10, sticky="nsew")
