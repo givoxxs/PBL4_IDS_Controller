@@ -76,7 +76,8 @@ class DataManager:
                     dst_IP TEXT,
                     dst_Port INTEGER,
                     occur INTEGER,
-                    action_taken INTEGER
+                    action_taken INTEGER,
+                    UNIQUE (timestamp, src_IP, dst_IP, protocol)
                 )             
             """)
             print("Tạo bảng thành công")
@@ -118,7 +119,7 @@ class DataManager:
         """Thêm danh sách alert vào db và cập nhật cache."""
         try:
             self.cursor.executemany("""
-                INSERT INTO alerts (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, occur, action_taken)
+                INSERT OR IGNORE INTO alerts (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, occur, action_taken)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, [alert.to_tuple() for alert in alerts])
             self.conn.commit()
@@ -213,4 +214,8 @@ class DataManager:
     def __del__(self):
         """Đóng kết nối database khi DataManager bị hủy."""
         if hasattr(self, 'conn') and self.conn:
-            self.conn.close()
+            try:
+                self.conn.commit()  # Commit trước khi đóng
+                self.conn.close()
+            except sqlite3.Error as e:
+                logger.error(f"Lỗi khi đóng database: {e}", exc_info=True)
