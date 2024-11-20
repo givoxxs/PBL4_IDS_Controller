@@ -10,7 +10,6 @@ class IDSController:
 
     def get_alerts(self, filter_criteria=None, page=1, per_page=100):  # Thêm tham số page và per_page
         """Lấy danh sách alerts, có thể lọc theo tiêu chí và phân trang."""
-        print("GET_ALERTS IN IDS_CONTROLLER")
         offset = (page - 1) * per_page
         return self.data_manager.get_alerts(filter_criteria, limit=per_page, offset=offset)
     

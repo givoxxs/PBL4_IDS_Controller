@@ -4,6 +4,7 @@ from utils.plotter import Plotter
 from utils.check_services_status import check_service_status
 import matplotlib.pyplot as plt  # type: ignore
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib import rcParams
 
 
 class PanelDashboard(tk.Frame):
@@ -11,6 +12,8 @@ class PanelDashboard(tk.Frame):
         super().__init__(parent)
         self.controller = controller
         self.alerts = []
+        # Matplotlib configuration for tighter layout
+        rcParams.update({'figure.autolayout': True})  # Adjust layout to prevent labels from overlapping
         self.create_widgets()
         self.update_data()
 
@@ -67,9 +70,13 @@ class PanelDashboard(tk.Frame):
         # Frame Snort Status
         status_frame = ttk.LabelFrame(self, text="Snort & UFW Status")
         status_frame.grid(row=0, column=1, rowspan=2, padx=10, pady=10, sticky="nsew")
+        
+        # Frame Snort Status - use a Text widget instead of Label
+        status_frame = ttk.LabelFrame(self, text="Snort & UFW Status")
+        status_frame.grid(row=0, column=1, rowspan=2, padx=10, pady=10, sticky="nsew")
 
-        self.snort_status_label = ttk.Label(status_frame, text="Checking services...")
-        self.snort_status_label.pack(pady=5)
+        self.snort_status_text = tk.Text(status_frame, wrap=tk.WORD, height=6)  # Adjust height as needed
+        self.snort_status_text.pack(pady=5, fill=tk.BOTH, expand=True) # Allow text widget to expand
 
         # Frame Top Attacking IPs
         top_ips_frame = ttk.LabelFrame(self, text="Top Attacking IPs")
@@ -101,7 +108,7 @@ class PanelDashboard(tk.Frame):
         self.rowconfigure(1, weight=2)  # Bottom row
 
         # Refresh Button
-        refresh_button = ttk.Button(self, text="Refresh", command=self.update_data)
+        refresh_button = ttk.Button(self, text="Refresh", command=self.refresh_data)
         refresh_button.grid(row=2, column=0, columnspan=3, pady=(10, 0))
 
     def update_data(self):
@@ -127,6 +134,27 @@ class PanelDashboard(tk.Frame):
 
         # Schedule the next update
         self.after(300000, self.update_data)  # Update every 5 minutes
+        
+    def refresh_data(self):
+        """Refresh data on the dashboard."""
+        self.alerts = self.controller.get_alerts()
+
+        # Update alert counts
+        self.total_alerts_label.config(text=f"Total Alerts: {len(self.alerts)}")
+        unhandled_alerts = [alert for alert in self.alerts if not alert.action_taken]
+        self.unhandled_alerts_label.config(text=f"Unhandled Alerts: {len(unhandled_alerts)}")
+
+        # Update charts
+        self.plot_alerts_time()
+        self.plot_top_ips()
+        self.plot_alert_types()
+        self.plot_top_rules()
+
+        # Update listboxes
+        self.update_top_ips_listbox()
+        self.update_top_rules_listbox()
+        
+        self.check_snort_status()
 
     def switch_chart(self, chart_type):
         """Switch between charts."""
@@ -145,28 +173,32 @@ class PanelDashboard(tk.Frame):
 
     def plot_alerts_time(self):
         Plotter.plot_alerts_over_time(self.ax_time, self.alerts)
+        self.fig_time.tight_layout()
         self.canvas_time.draw()
 
     def plot_top_ips(self):
         Plotter.plot_top_attack_ips(self.ax_ips, self.alerts)
+        self.fig_ips.tight_layout()
         self.canvas_ips.draw()
 
     def plot_alert_types(self):
         Plotter.plot_alert_types(self.ax_types, self.alerts)
+        self.fig_types.tight_layout()
         self.canvas_types.draw()
 
     def plot_top_rules(self):
         Plotter.plot_top_rules(self.ax_rules, self.alerts)
+        self.fig_rules.tight_layout()
         self.canvas_rules.draw()
 
     def check_snort_status(self):
-        """Check Snort and UFW service status."""
+        """Check Snort and UFW service status."""       
         # snort_status = "Active"
         # ufw_status = "Active"
         ufw_status, snort_status = check_service_status()
-        self.snort_status_label.config(
-            text=f"Snort Status: {snort_status}\nUFW Status: {ufw_status}"
-        )
+        self.snort_status_text.delete("1.0", tk.END)  # Clear the text widget
+        self.snort_status_text.insert(tk.END, f"Snort Status: {snort_status}\n")
+        self.snort_status_text.insert(tk.END, f"UFW Status: {ufw_status}")
 
     def update_top_ips_listbox(self):
         top_ips = Plotter.get_top_attack_ips(self.alerts)
