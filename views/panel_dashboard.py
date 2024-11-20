@@ -161,9 +161,9 @@ class PanelDashboard(tk.Frame):
 
     def check_snort_status(self):
         """Check Snort and UFW service status."""
-        snort_status = "Active"
-        ufw_status = "Active"
-        # ufw_status, snort_status = check_service_status()
+        # snort_status = "Active"
+        # ufw_status = "Active"
+        ufw_status, snort_status = check_service_status()
         self.snort_status_label.config(
             text=f"Snort Status: {snort_status}\nUFW Status: {ufw_status}"
         )
