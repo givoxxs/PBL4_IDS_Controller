@@ -30,11 +30,10 @@ class IDSController:
                 result = self.alert_service.block_alert(alert)
             else:
                 result = "Invalid action."
-
-            if alert.action_taken: # Chỉ update database nếu action được thực hiện thành công
-                self.data_manager.update_alert(alert) # Cập nhật model sau khi xử lý
-                if alert == self.alerts[i]: # so sánh theo nội dung của alert
-                    self.alerts[i] = alert
+            
+            if alert.action_taken:
+                self.data_manager.update_alert(alert)
+                self.alerts = self.get_alerts()
             
             return result # Trả về kết quả để hiển thị cho người dùng
         except Exception as e: # Bắt lỗi toàn cục
