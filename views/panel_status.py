@@ -41,3 +41,6 @@ class PanelStatus(tk.Frame):
         self.UFW_status_text.delete("1.0", tk.END)
         self.snort_status_text.insert(tk.END, f"Snort Status: {snort_status} \n")
         self.UFW_status_text.insert(tk.END, f"UFW Status: {ufw_status}")
+        self.snort_status_text.config(state="disabled")
+        self.UFW_status_text.config(state="disabled")
+    
