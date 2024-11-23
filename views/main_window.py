@@ -4,7 +4,7 @@ from views.panel_status import PanelStatus
 from views.panel_logs import PanelLogs
 from views.panel_threats import PanelThreats
 from views.panel_config import PanelConfig
-from views.panel_dashboard import PanelDashboard # Import PanelDashboard
+from views.panel_dashboard import PanelDashboard 
 from config.settings import Settings
 
 class MainWindow(tk.Frame):

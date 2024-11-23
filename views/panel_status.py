@@ -34,7 +34,6 @@ class PanelStatus(tk.Frame):
     def update_data(self):
         self.check_status()  
         
-
     def check_status(self):
         ufw_status = check_UFW_status()
         snort_status = check_snort_status()
