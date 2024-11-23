@@ -1,12 +1,12 @@
 import json
 import tkinter as tk
 from tkinter import ttk
-from controllers import ids_controller
+from controllers.ids_controller import IDSController
 
 class PanelConfig(tk.Frame):
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller: IDSController):
         super().__init__(parent)
-        self.controller = ids_controller
+        self.controller = controller
         self.create_widgets()
 
     def create_widgets(self):
