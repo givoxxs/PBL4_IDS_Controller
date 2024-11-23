@@ -1,4 +1,5 @@
 from controllers.ids_controller import IDSController
+from services.alert_service import AlertService
 from views.main_window import MainWindow
 from config import settings, logging_config
 import logging

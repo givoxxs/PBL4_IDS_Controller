@@ -1,6 +1,7 @@
 # views/panel_threats.py
 import tkinter as tk
 from tkinter import ttk
+from tkinter import messagebox as mb
 
 class PanelThreats(tk.Frame):
 
@@ -76,22 +77,26 @@ class PanelThreats(tk.Frame):
 
     def handle_threat_action(self, action):
         """Xử lý hành động của người dùng trên threat."""
-
-        selected_item = self.tree.selection() # lấy threat được chọn
-        if selected_item:
-            threat_data = self.tree.item(selected_item[0])["values"]  # Lấy dữ liệu threat
-            # Chuyển đổi threat_data thành dictionary để dễ xử lý
-            threat_dict = {
-                "src_IP": threat_data[0],
-                "dst_IP": threat_data[1],
-                "protocol": threat_data[2],
-                "occur": threat_data[3],
-                "last_seen": threat_data[4]
-            }
-            result = self.controller.handle_threat_action(threat_dict, action)  # Gọi controller để xử lý
-            print(result) # or show messagebox
-            self.display_threats() # update treeview
-            
+        res = mb.askquestion("Confirm", action + " this threat? ")
+    
+        if res == 'yes':
+            selected_item = self.tree.selection() # lấy threat được chọn    
+            if selected_item:
+                threat_data = self.tree.item(selected_item[0])["values"]  # Lấy dữ liệu threat
+                # Chuyển đổi threat_data thành dictionary để dễ xử lý
+                threat_dict = {
+                    "src_IP": threat_data[0],
+                    "dst_IP": threat_data[1],
+                    "protocol": threat_data[2],
+                    "occur": threat_data[3],
+                    "last_seen": threat_data[4]
+                }
+                result = self.controller.handle_threat_action(threat_dict, action)  # Gọi controller để xử lý
+                print(result) # or show messagebox
+                self.display_threats() # update treeview
+        else:
+            pass
+ 
     def update_pagination(self):
         """Cập nhật thông tin phân trang."""
 
@@ -119,4 +124,4 @@ class PanelThreats(tk.Frame):
             self.page += 1
             self.display_threats(self.page)
             self.update_pagination()
-        
+    

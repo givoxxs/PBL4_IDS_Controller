@@ -1,3 +1,4 @@
+import json
 from models.data_manager import DataManager
 from models.alert import Alert
 from services.alert_service import AlertService
@@ -5,6 +6,11 @@ from services.alert_service import AlertService
 class IDSController:
     def __init__(self, root):
         self.root = root
+        self.config = {
+            "update_interval": 300000,
+            "max_listbox_items": 20,
+            # ... other default settings
+        }
         self.data_manager = DataManager(root)
         self.alert_service = AlertService(root)
 
@@ -99,3 +105,19 @@ class IDSController:
         print("Collecting data for dashboard")
         print("Getting alerts in collect_data_for_dashboard")
         alerts = self.get_alerts()
+    
+    def load_config(self, config_path="dashboard_config.json"):
+        try:
+            with open(config_path, 'r') as f:
+                self.config = json.load(f) # Update the config dictionary
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"Error loading config: {e}")
+            # Handle error appropriately, e.g., use default config
+
+
+    def save_config(self, config_path="dashboard_config.json"):
+        try:
+            with open(config_path, 'w') as f:
+                json.dump(self.config, f, indent=4)
+        except Exception as e:
+            print(f"Error saving config: {e}")

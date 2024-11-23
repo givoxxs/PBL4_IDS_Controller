@@ -34,7 +34,6 @@ class PanelStatus(tk.Frame):
     def update_data(self):
         self.check_status()  
         
-
     def check_status(self):
         ufw_status = check_UFW_status()
         snort_status = check_snort_status()
@@ -42,3 +41,6 @@ class PanelStatus(tk.Frame):
         self.UFW_status_text.delete("1.0", tk.END)
         self.snort_status_text.insert(tk.END, f"Snort Status: {snort_status} \n")
         self.UFW_status_text.insert(tk.END, f"UFW Status: {ufw_status}")
+        self.snort_status_text.config(state="disabled")
+        self.UFW_status_text.config(state="disabled")
+    
