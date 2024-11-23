@@ -13,6 +13,7 @@ class DataManager:
         self.root = root
         self.db_path = os.path.join("data", "ids_data.db") 
         self._config = self._load_config()
+        
         self.update_interval = self._config.get("update_interval", 60) * 1000  # milliseconds
         
         try:
@@ -22,6 +23,8 @@ class DataManager:
         except sqlite3.Error as e:
             # print(f"Lỗi kết nối database: {e}")
             logger.error(f"Lỗi kết nối database: {e}", exc_info=True)
+            self.conn = None
+            self.cursor = None
             
         self.alert_reader = AlertReader(Settings.LOG_PATH)
         self.max_alerts = self._config.get("max_alerts", 5000)
