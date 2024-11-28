@@ -78,6 +78,7 @@ class DataManager:
                     src_Port INTEGER,
                     dst_IP TEXT,
                     dst_Port INTEGER,
+                    priority INTEGER,
                     occur INTEGER,
                     action_taken INTEGER,
                     UNIQUE (timestamp, src_IP, dst_IP, protocol)
@@ -122,8 +123,8 @@ class DataManager:
         """Thêm danh sách alert vào db và cập nhật cache."""
         try:
             self.cursor.executemany("""
-                INSERT OR IGNORE INTO alerts (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, occur, action_taken)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT OR IGNORE INTO alerts (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority, occur, action_taken)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, [alert.to_tuple() for alert in alerts])
             self.conn.commit()
 
@@ -181,23 +182,32 @@ class DataManager:
                 self.alerts[i] = alert # update alert trong cache
                 break
     
-    def get_threats(self, limit=None, offset=None):  # Thêm limit và offset
-        """Lấy danh sách các threat từ database (nhóm các alert) và phân trang."""
+    def get_threats(self, limit=None, offset=None, min_priority = 3):  # Thêm tham số min_priority
+        """Lấy danh sách các threat có priority cao từ database (nhóm các alert) và phân trang."""
         try:
             query = """
-                SELECT src_IP, dst_IP, protocol, COUNT(*) AS occur, MAX(timestamp) as last_seen
+                SELECT src_IP, dst_IP, protocol, priority, COUNT(*) AS occur, MAX(timestamp) as last_seen
                 FROM alerts
-                WHERE action_taken = 0
+                WHERE action_taken = 0 AND priority <= ?
                 GROUP BY src_IP, dst_IP, protocol
+                ORDER BY priority DESC;
+
             """
+            
             if limit and offset:
                 query += f" LIMIT {limit} OFFSET {offset}"
-            self.cursor.execute(query)
+
+            # Thực thi câu lệnh với điều kiện min_priority
+            self.cursor.execute(query, (min_priority,))
             rows = self.cursor.fetchall()
+            
+            # Trả về danh sách từ điển với thông tin priority
             return [dict(row) for row in rows]
+
         except sqlite3.Error as e:
             logger.error(f"Lỗi khi lấy threats: {e}", exc_info=True)
             return []
+
         
     def search_alerts(self, filter_criteria, limit=None, offset=None):  # Thêm limit và offset
         """Tìm kiếm alert theo filter_criteria và phân trang."""
@@ -211,7 +221,7 @@ class DataManager:
             rows = self.cursor.fetchall()
             return [Alert(**row) for row in rows]
         except sqlite3.Error as e:
-            logger.error(f"Lỗi khi tìm kiếm alerts: {e}", exc_info=True)
+            logger.error(f"The error when finding alerts: {e}", exc_info=True)
             return []
         
     def __del__(self):
@@ -221,4 +231,4 @@ class DataManager:
                 self.conn.commit()  # Commit trước khi đóng
                 self.conn.close()
             except sqlite3.Error as e:
-                logger.error(f"Lỗi khi đóng database: {e}", exc_info=True)
+                logger.error(f"The error when closing database: {e}", exc_info=True)

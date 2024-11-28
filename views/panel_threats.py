@@ -1,10 +1,11 @@
 # views/panel_threats.py
 import tkinter as tk
 from tkinter import ttk
-
+from tkinter import messagebox as mb
+from controllers.ids_controller import IDSController
 class PanelThreats(tk.Frame):
 
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller: IDSController):
         super().__init__(parent)
         self.controller = controller
         self.page = 1 # Khởi tạo page
@@ -16,7 +17,7 @@ class PanelThreats(tk.Frame):
         """Tạo các widget cho Panel Threats."""
 
         # Tạo Treeview
-        columns = ("Source IP", "Destination IP", "Protocol", "Occurrences", "Last Seen") # Thêm cột Last Seen
+        columns = ("Source IP", "Destination IP", "Protocol", "Priority", "Occurrences", "Last Seen") # Thêm cột Last Seen
         self.tree = ttk.Treeview(self, columns=columns, show="headings")
         for col in columns:
             self.tree.heading(col, text=col)
@@ -60,38 +61,42 @@ class PanelThreats(tk.Frame):
 
         # Cập nhật Treeview
         for threat in threats:
-            key = (threat["src_IP"], threat["dst_IP"], threat["protocol"])
+            key = (threat["src_IP"], threat["dst_IP"], threat["protocol"]), threat["priority"]
             if key in current_threats:
                 # Cập nhật threat hiện có
                 item = current_threats[key]
-                self.tree.item(item, values=(threat["src_IP"], threat["dst_IP"], threat["protocol"], threat["occur"], threat['last_seen']))
+                self.tree.item(item, values=(threat["src_IP"], threat["dst_IP"], threat["protocol"], threat["priority"], threat["occur"], threat['last_seen']))
                 del current_threats[key]  # Xóa khỏi current_threats
             else:
                 # Thêm threat mới
-                self.tree.insert("", tk.END, values=(threat["src_IP"], threat["dst_IP"], threat["protocol"], threat["occur"], threat['last_seen']))
+                self.tree.insert("", tk.END, values=(threat["src_IP"], threat["dst_IP"], threat["protocol"], threat["priority"],threat["occur"], threat['last_seen']))
 
         # Xóa các threat không còn tồn tại
         for item in current_threats.values():
             self.tree.delete(item)
 
-    def handle_threat_action(self, action):
+    def handle_threat_action(self, action: str):
         """Xử lý hành động của người dùng trên threat."""
-
-        selected_item = self.tree.selection() # lấy threat được chọn
-        if selected_item:
-            threat_data = self.tree.item(selected_item[0])["values"]  # Lấy dữ liệu threat
-            # Chuyển đổi threat_data thành dictionary để dễ xử lý
-            threat_dict = {
-                "src_IP": threat_data[0],
-                "dst_IP": threat_data[1],
-                "protocol": threat_data[2],
-                "occur": threat_data[3],
-                "last_seen": threat_data[4]
-            }
-            result = self.controller.handle_threat_action(threat_dict, action)  # Gọi controller để xử lý
-            print(result) # or show messagebox
-            self.display_threats() # update treeview
-            
+        res = mb.askquestion("Confirm", action.title() + " this threat? ")
+    
+        if res == 'yes':
+            selected_item = self.tree.selection() # lấy threat được chọn    
+            if selected_item:
+                threat_data = self.tree.item(selected_item[0])["values"]  # Lấy dữ liệu threat
+                # Chuyển đổi threat_data thành dictionary để dễ xử lý
+                threat_dict = {
+                    "src_IP": threat_data[0],
+                    "dst_IP": threat_data[1],
+                    "protocol": threat_data[2],
+                    "occur": threat_data[3],
+                    "last_seen": threat_data[4]
+                }
+                result = self.controller.handle_threat_action(threat_dict, action)  # Gọi controller để xử lý
+                print(result) # or show messagebox
+                self.display_threats() # update treeview
+        else:
+            pass
+ 
     def update_pagination(self):
         """Cập nhật thông tin phân trang."""
 
@@ -119,4 +124,4 @@ class PanelThreats(tk.Frame):
             self.page += 1
             self.display_threats(self.page)
             self.update_pagination()
-        
+    
