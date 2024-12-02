@@ -55,10 +55,10 @@ class AlertReader:
             
             src_Port = int(data[9].strip()) if data[9].strip() else None # Strip before checking
             dst_Port = int(data[11].strip()) if data[11].strip() else None # Strip before checking
-
+            priority = 3
             occur = 1
             action_taken = 0
-            return (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, occur, action_taken)
+            return (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority, occur, action_taken)
 
 
         except (ValueError, IndexError) as e:
