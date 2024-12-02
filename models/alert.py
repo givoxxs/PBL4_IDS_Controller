@@ -6,7 +6,7 @@ class Alert:
     Class Alert represents a specific suspicious traffic,
     which can be blocked with a Snort or firewall rule.
     """
-    def __init__(self, timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, occur=1, action_taken=False, id=None):
+    def __init__(self, timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority = 3, occur=1, action_taken=False, id=None):
         self.timestamp = timestamp
         self.action = action
         self.protocol = protocol
@@ -19,6 +19,7 @@ class Alert:
         self.src_Port = src_Port
         self.dst_IP = dst_IP
         self.dst_Port = dst_Port
+        self.priority = priority
         self.occur = occur
         self.action_taken = action_taken
         self.id = id
@@ -34,7 +35,7 @@ class Alert:
     @staticmethod # Thêm @staticmethod
     def get_columns():
        """Trả về danh sách tên cột."""
-       return ["timestamp", "action", "protocol", "gid", "sid", "rev", "msg", "service", "src_IP", "src_Port", "dst_IP", "dst_Port", "occur", "action_taken"]
+       return ["timestamp", "action", "protocol", "gid", "sid", "rev", "msg", "service", "src_IP", "src_Port", "dst_IP", "dst_Port", "priority","occur", "action_taken"]
 
     def to_tuple(self):
         """
@@ -43,7 +44,7 @@ class Alert:
         return (
             self.timestamp, self.action, self.protocol, self.gid, self.sid,
             self.rev, self.msg, self.service, self.src_IP, self.src_Port,
-            self.dst_IP, self.dst_Port, self.occur, self.action_taken
+            self.dst_IP, self.dst_Port, self.priority, self.occur, self.action_taken
         )
         
     def to_dict(self):
@@ -63,9 +64,10 @@ class Alert:
             "src_Port": self.src_Port,
             "dst_IP": self.dst_IP,
             "dst_Port": self.dst_Port,
+            "priority": self.priority,
             "occur": self.occur,
             "action_taken": self.action_taken,
         }
 
     def to_csv_form(self):
-        return f"{self.src_IP},{self.dst_IP},{self.protocol},{self.occur},{self.action_taken}"
+        return f"{self.src_IP},{self.dst_IP},{self.protocol},{self.priority},{self.occur},{self.action_taken}"
