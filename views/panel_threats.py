@@ -88,8 +88,9 @@ class PanelThreats(tk.Frame):
                     "src_IP": threat_data[0],
                     "dst_IP": threat_data[1],
                     "protocol": threat_data[2],
-                    "occur": threat_data[3],
-                    "last_seen": threat_data[4]
+                    "priority": threat_data[3],
+                    "occur": threat_data[4],
+                    "last_seen": threat_data[5]
                 }
                 result = self.controller.handle_threat_action(threat_dict, action)  # Gọi controller để xử lý
                 print(result) # or show messagebox

@@ -8,10 +8,10 @@ import json
 
 logger = logging.getLogger(__name__)
 
-class DataManager:
+class HandledDataManager:
     def __init__(self, root):
         self.root = root
-        self.db_path = os.path.join("data", "ids_data.db") 
+        self.db_path = os.path.join("data", "handled_data.db") 
         self._config = self._load_config()
         
         self.update_interval = self._config.get("update_interval", 60) * 1000  # milliseconds
@@ -32,25 +32,7 @@ class DataManager:
         self.create_tables()
         self.init_db_from_file()
         self.last_update_time = 0  # Thờai điểm cập nhật lần cuối (timestamp)
-        
-    def update_alerts_from_file(self):
-        """Cập nhật alert từ file log."""
-        try:
-            current_time = os.path.getmtime(Settings.LOG_PATH) # lấy thời gian cập nhật cuối
-            if current_time > self.last_update_time:
-                # new_alerts = self.alert_reader.read_alerts(self.last_update_time)
-                new_alerts = self.alert_reader.read_alerts(last_update_time=self.last_update_time)
-                if new_alerts:
-                    self.insert_alerts(new_alerts)
-                    self.last_update_time = current_time # update last_update_time sau khi insert alert thành công
-                    logger.info(f"Đã cập nhật {len(new_alerts)} alerts từ file log. ")
-        except FileNotFoundError:
-            logger.error(f"File {Settings.LOG_PATH} không tồn tại.", exc_info=True)
-        except Exception as e:
-            logger.error(f"Lỗi khi cập nhật alerts từ file: {e}", exc_info=True)
-        
-        self.root.after(self.update_interval, self.update_alerts_from_file)
-        
+            
     def _load_config(self):
         try:
             with open("config.json", "r") as f:
@@ -64,7 +46,7 @@ class DataManager:
         '''Tạo bảng nếu chưa tồn tại'''
         try:
             self.cursor.execute(""" 
-                CREATE TABLE IF NOT EXISTS alerts (
+                CREATE TABLE IF NOT EXISTS handled_attack (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     timestamp TEXT,
                     action TEXT,
@@ -84,10 +66,10 @@ class DataManager:
                     UNIQUE (timestamp, src_IP, dst_IP, protocol)
                 )             
             """)
-            print("Tạo bảng thành công")
+            print("Tao thanh cong handled_attack")
             self.create_indices()
             self.conn.commit() #
-            logger.info("Tạo bảng thành công")
+            logger.info("Tao thanh cong handled_attack")
         except sqlite3.Error as e:
             logger.error(f"Lỗi khi tạo bảng: {e}", exc_info=True)
             
@@ -105,37 +87,22 @@ class DataManager:
             logger.error(f"Lỗi khi tạo index: {e}", exc_info=True)
 
         
-            
-    def init_db_from_file(self):
-        """Khởi tạo database từ file."""
-        try:
-            alerts = self.alert_reader.read_alerts()
-            if alerts: # Nếu đọc được alert từ file
-                self.insert_alerts(alerts) # chèn vào db
-                self.last_update_time = os.path.getmtime(Settings.LOG_PATH) # cập nhật thời gian update cuối
-
-            logger.info("Khởi tạo database từ file thành công.")
-        except FileNotFoundError:
-            logger.error(f"File {Settings.LOG_PATH} không tồn tại. Bỏ qua khởi tạo.", exc_info=True)
-        except Exception as e:
-            logger.error(f"Lỗi khi khởi tạo database từ file: {e}", exc_info=True)
-            
     def insert_alerts(self, alerts):
         """Thêm danh sách alert vào db và cập nhật cache."""
         try:
             self.cursor.executemany("""
-                INSERT OR IGNORE INTO alerts (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority, occur, action_taken)
+                INSERT OR IGNORE INTO handled_attack (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority, occur, action_taken)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, [alert.to_tuple() for alert in alerts])
             self.conn.commit()
 
-            # Cập nhật cache (giới hạn số lượng alert)
-            if len(self.alerts) + len(alerts) > self.max_alerts:
-                self.alerts = self.alerts[-(self.max_alerts - len(alerts)):] + alerts
-            else:
-                self.alerts.extend(alerts)
+            # # Cập nhật cache (giới hạn số lượng alert)
+            # if len(self.alerts) + len(alerts) > self.max_alerts:
+            #     self.alerts = self.alerts[-(self.max_alerts - len(alerts)):] + alerts
+            # else:
+            #     self.alerts.extend(alerts)
 
-            logger.info(f"Đã thêm {len(alerts)} alerts vào database.")
+            # logger.info(f"Đã thêm {len(alerts)} handled_ vào database.")
             
         except sqlite3.Error as e:
             logger.error(f"Lỗi khi chèn alerts: {e}", exc_info=True)
@@ -183,7 +150,7 @@ class DataManager:
                 self.alerts[i] = alert # update alert trong cache
                 break
     
-    def get_threats(self, limit=None, offset=None, min_priority = 3):  # Thêm tham số min_priority
+    def get_threats(self, limit=None, offset=None, min_priority = 3): 
         """Lấy danh sách các threat có priority cao từ database (nhóm các alert) và phân trang."""
         try:
             query = """

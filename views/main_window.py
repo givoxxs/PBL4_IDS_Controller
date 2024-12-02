@@ -5,6 +5,7 @@ from views.panel_logs import PanelLogs
 from views.panel_threats import PanelThreats
 from views.panel_config import PanelConfig
 from views.panel_dashboard import PanelDashboard # Import PanelDashboard
+from views.panel_handled import PanelHandled
 from config.settings import Settings
 
 class MainWindow(tk.Frame):
@@ -63,6 +64,11 @@ class MainWindow(tk.Frame):
         panel_config = PanelConfig(self.notebook, self.controller)
         self.notebook.add(panel_config, text="Config")
         self.frames["config"] = panel_config
+
+        panel_handled = PanelHandled(self.notebook, self.controller)
+        self.notebook.add(panel_handled, text="Handled Attack")
+        self.frames["handled"] = panel_handled
+
 
 
 

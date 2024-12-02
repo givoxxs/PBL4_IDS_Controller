@@ -3,7 +3,8 @@ from tkinter import ttk
 from models.alert import Alert
 from tkinter import messagebox
 from controllers.ids_controller import IDSController
-class PanelLogs(tk.Frame):
+
+class PanelHandled(tk.Frame):
     def __init__(self, parent, controller: IDSController):
         super().__init__(parent)
         self.controller = controller
@@ -12,9 +13,8 @@ class PanelLogs(tk.Frame):
         self.create_widgets()
         self.display_alerts() # Hiển thị alert ban đầu
 
-
     def create_widgets(self):
-        """Tạo các widget cho Panel Logs."""
+        """Tạo các widget cho Panel Handled."""
 
         # Tạo Treeview widget
         columns = Alert.get_columns() # Gọi phương thức get_columns()
@@ -37,28 +37,22 @@ class PanelLogs(tk.Frame):
         self.next_button = ttk.Button(pagination_frame, text="Next", command=self.next_page)
         self.next_button.pack(side = tk.LEFT)
             
-    def display_alerts(self, protocol_filter = "Tất cả"): # thêm tham số lọc
-            # ... (xóa dữ liệu cũ trong tree)
-            for i in self.tree.get_children():
-                self.tree.delete(i)
-                
-
-            self.current_protocol_filter = protocol_filter # Biến lưu trữ filter hiện tại
+    def display_alerts(self, filter_criteria = {'action_taken': True}): # thêm tham số lọc
+        # ... (xóa dữ liệu cũ trong tree)
+        for i in self.tree.get_children():
+            self.tree.delete(i)
             
-            # Tạo filter_criteria dictionary
-            if protocol_filter.lower() == "tất cả":
-                filter_criteria = None  # Không lọc nếu là "Tất cả"
-            else:
-                filter_criteria = {"protocol": protocol_filter}
+        self.filter_criteria = filter_criteria # Biến lưu trữ filter hiện tại
+        
+        self.update_pagination(filter_criteria) # tính toán số trang và cập nhật lại page label
 
-            self.update_pagination(filter_criteria) # tính toán số trang và cập nhật lại page label
+        # Lấy dữ liệu theo trang hiện tại
+        alerts = self.controller.get_alerts(filter_criteria=filter_criteria, page=self.page, per_page=self.per_page)
+        print(alerts)
 
-            # Lấy dữ liệu theo trang hiện tại
-            alerts = self.controller.get_alerts(filter_criteria=filter_criteria, page=self.page, per_page=self.per_page)
-
-            for alert in alerts:
-                self.tree.insert("", tk.END, values=alert.to_tuple())
-                
+        for alert in alerts:
+            self.tree.insert("", tk.END, values=alert.to_tuple())
+            
     def update_pagination(self, filter_criteria=None):
         """Cập nhật thông tin phân trang."""
         total_alerts = self.controller.get_total_alerts(filter_criteria=filter_criteria)  # tính tổng alert với filter hiện tại
