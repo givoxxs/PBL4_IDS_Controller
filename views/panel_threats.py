@@ -4,6 +4,8 @@ from tkinter import messagebox as mb
 from controllers.ids_controller import IDSController
 import logging
 import time
+import asyncio
+from threading import Thread
 
 logger = logging.getLogger(__name__)
 
@@ -18,7 +20,6 @@ class PanelThreats(tk.Frame):
         self.display_threats()
 
     def create_widgets(self):
-        """Tạo các widget cho Panel Threats."""
         columns = (
             "Source IP",
             "Destination IP",
@@ -60,68 +61,33 @@ class PanelThreats(tk.Frame):
             button.pack(side=tk.LEFT, padx=5, pady=5)
 
     def display_threats(self, page=1):
-        """Hiển thị danh sách các mối đe dọa."""
         logger.info("Loading panel threats")
         for item in self.tree.get_children():
             self.tree.delete(item)
 
         offset = (page - 1) * self.per_page
-        threats = self.controller.get_threats(limit=self.per_page, offset=offset, priority=self.default_max_priority)  # use the default priority
-        current_threats = {}
+        threats = self.controller.get_threats(limit=self.per_page, offset=offset, priority=self.default_max_priority)
         self.page = page
         self.update_pagination()
 
-        for item in self.tree.get_children():
-            values = self.tree.item(item)["values"]
-            key = (
-                values[0],
-                values[1],
-                values[2],
-            )
-            current_threats[key] = item
-
         for threat in threats:
-            key = (threat["src_IP"], threat["dst_IP"], threat["protocol"])
-            if key in current_threats:
-                item = current_threats[key]
-                self.tree.item(
-                    item,
-                    values=(
-                        threat["src_IP"],
-                        threat["dst_IP"],
-                        threat["protocol"],
-                        threat.get("action_taken", 0),
-                        threat.get("priority", "N/A"),
-                        threat["occur"],
-                        threat["last_seen"],
-                    ),
-                )
-                del current_threats[key]
-            else:
-                self.tree.insert(
-                    "",
-                    tk.END,
-                    values=(
-                        threat["src_IP"],
-                        threat["dst_IP"],
-                        threat["protocol"],
-                        threat.get("action_taken", 0),
-                        threat.get("priority", "N/A"),
-                        threat["occur"],
-                        threat["last_seen"],
-                    ),
-                )
-
-        for item in current_threats.values():
-            self.tree.delete(item)
+            self.tree.insert(
+                "",
+                tk.END,
+                values=(
+                    threat["src_IP"],
+                    threat["dst_IP"],
+                    threat["protocol"],
+                    threat.get("action_taken", 0),
+                    threat.get("priority", "N/A"),
+                    threat["occur"],
+                    threat["last_seen"],
+                ),
+            )
 
     def handle_threat_action(self, action: str):
-        """Xử lý hành động của người dùng trên threat."""
-        res = mb.askquestion("Confirm", action.title() + " this threat? ")
+        res = mb.askquestion("Confirm", f"{action.title()} this threat?")
         if res == "yes":
-            # Show loading spinner
-            self.show_loading()
-
             selected_item = self.tree.selection()
             if selected_item:
                 threat_data = self.tree.item(selected_item[0])["values"]
@@ -134,51 +100,49 @@ class PanelThreats(tk.Frame):
                     "occur": threat_data[5],
                     "last_seen": threat_data[6],
                 }
-                result = self.controller.handle_threat_action(
-                    threat_dict, action
-                )
-                logger.info(f"From threat.py {action} {result}")
-                self.display_threats(self.page)
 
-            # Hide loading spinner
-            self.hide_loading()
-        else:
-            pass
+                self.show_loading()
+                # Run in a separate thread
+                Thread(
+                    target=self.run_async_action,
+                    args=(action, threat_dict),
+                    daemon=True,
+                ).start()
+
+    def run_async_action(self, action, threat_dict):
+        """Wrapper to run the asyncio event loop."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(self._process_threat_action(action, threat_dict))
+        loop.close()
+
+        # Make sure to run this code in the main thread to update the UI
+        self.after(0, self.display_threats, self.page)
+        
+        # Hide loading screen after the task is complete
+        self.after(0, self.hide_loading)
+
+    async def _process_threat_action(self, action: str, threat_dict):
+        result = self.controller.handle_threat_action(threat_dict, action)
+        logger.info(f"Action {action}: {result}")
+        return result
 
     def show_loading(self):
-        """Hiển thị cửa sổ loading với vòng quay."""
         self.loading_window = tk.Toplevel(self)
         self.loading_window.title("Loading...")
         self.loading_window.resizable(False, False)
 
-        label = tk.Label(self.loading_window, text="Please wait while the system handles this", font=("Helvetica", 12))
+        label = tk.Label(self.loading_window, text="Please wait...", font=("Helvetica", 12))
         label.pack(padx=20, pady=20)
 
-        spinner_label = tk.Label(self.loading_window, text="⏳", font=("Helvetica", 30))
-        spinner_label.pack(pady=10)
-
-        # Cập nhật vòng quay
-        self.spinner_label = spinner_label
-        self.update_spinner()
-
-    def update_spinner(self):
-        """Cập nhật vòng quay động."""
-        symbols = ['⏳', '🕰', '⏰']
-        current_symbol = symbols.pop(0)
-        self.spinner_label.config(text=current_symbol)
-        symbols.append(current_symbol)
-        self.loading_window.after(500, self.update_spinner)  # Lặp lại sau 500ms
-
     def hide_loading(self):
-        """Đóng cửa sổ loading khi hoàn thành công việc."""
-        self.loading_window.destroy()
+        """Close the loading window."""
+        if hasattr(self, "loading_window"):
+            self.loading_window.destroy()
 
     def update_pagination(self):
-        """Cập nhật thông tin phân trang."""
         total_threats = self.controller.get_total_threats()
-        total_pages = (
-            total_threats + self.per_page - 1
-        ) // self.per_page
+        total_pages = (total_threats + self.per_page - 1) // self.per_page
         self.page_label.config(text=f"Page {self.page}/{total_pages}")
 
         self.prev_button.config(state=tk.NORMAL if self.page > 1 else tk.DISABLED)
@@ -187,13 +151,11 @@ class PanelThreats(tk.Frame):
         )
 
     def prev_page(self):
-        """Chuyển đến trang trước."""
         if self.page > 1:
             self.page -= 1
             self.display_threats(self.page)
 
     def next_page(self):
-        """Chuyển đến trang sau."""
         total_threats = self.controller.get_total_threats()
         total_pages = (total_threats + self.per_page - 1) // self.per_page
         if self.page < total_pages:

@@ -19,42 +19,19 @@ class AlertReader:
         self.file_path = file_path
         self.separator = separator  # Gán giá trị separator vào đối tượng
 
-    def read_alerts(self, last_update_time=0, has_header=True):
-        """
-        Đọc các alert từ file CSV, chỉ đọc nếu file đã được cập nhật.
-
-        Args:
-            last_update_time (float, optional): Thời điểm cập nhật cuối cùng. Mặc định là 0.
-            has_header (bool, optional): File có header không. Mặc định là True.
-
-        Returns:
-            list[Alert]: Danh sách các đối tượng Alert đã đọc, hoặc None nếu có lỗi.
-        """
+    def read_alerts(self, last_update_time=0):
         alerts = []
         try:
-            with open(self.file_path, "r", encoding="utf-8") as file:
+            with open(self.file_path, "r", encoding="utf-8") as file: # Thêm encoding="utf-8" để xử lý các ký tự đặc biệt
                 file_update_time = os.path.getmtime(self.file_path)
-                if file_update_time > last_update_time:
-                    if has_header:
-                        try:
-                            header = next(file)
-                        except StopIteration:
-                            logger.warning("File is empty, no header to skip")
-                            return []
-
-                        if not self._validate_header(header):
-                            logger.warning("Header is not as expected, continue with line reading")
-
+                if file_update_time > last_update_time: # chỉ đọc nếu file đã thay đổi
+                    next(file) # skip header line
                     for line in file:
                         alert_data = self._parse_alert_line(line.strip())
                         if alert_data:
                             alert = Alert(*alert_data)
                             alerts.append(alert)
-                    logger.info(f"Đọc thành công {len(alerts)} alerts từ {self.file_path}")
-                    return alerts
-                else:
-                    logger.info(f"File {self.file_path} không thay đổi, không đọc")
-                    return []
+            return alerts
         except FileNotFoundError:
             logger.error(f"File {self.file_path} không tồn tại.", exc_info=True)
             return None
