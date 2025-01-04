@@ -52,15 +52,15 @@ class AlertReader:
                         if alert_data:
                             alert = Alert(*alert_data)
 
-                            if alert.priority == '1' or alert.priority == '2':
-                                existing_alerts = {(a.src_IP, a.dst_IP, a.protocol) for a in alerts if a.action_taken}
-                                alert_key = (alert.src_IP, alert.dst_IP, alert.protocol)
+                            # if alert.priority == '1' or alert.priority == '2':
+                            #     existing_alerts = {(a.src_IP, a.dst_IP, a.protocol) for a in alerts if a.action_taken}
+                            #     alert_key = (alert.src_IP, alert.dst_IP, alert.protocol)
 
-                                if alert_key in existing_alerts:
-                                    alert.action_taken = True
-                                else:
-                                    self.file_modifier.block_fastest(alert)
-                                    alert.action_taken = True    
+                            #     if alert_key in existing_alerts:
+                            #         alert.action_taken = True
+                            #     else:
+                            #         self.file_modifier.block_fastest(alert)
+                            #         alert.action_taken = True    
 
                             alerts.append(alert)
                     logger.info(f"Đọc thành công {len(alerts)} alerts từ {self.file_path}")

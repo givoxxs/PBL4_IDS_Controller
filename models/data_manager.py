@@ -2,6 +2,7 @@ import os
 import sqlite3
 from models.alert import Alert
 from utils.alert_reader import AlertReader
+from utils.file_modifier import FileModifier
 from config.settings import Settings
 import logging
 import json
@@ -26,6 +27,7 @@ class DataManager:
                 pass
 
         self._config = self._load_config()
+        self.file_modifier = FileModifier()
         
         self.update_interval = self._config.get("update_interval", 60) * 1000  # milliseconds
         
@@ -141,18 +143,52 @@ class DataManager:
         except Exception as e:
             logger.error(f"Lỗi khi khởi tạo database từ file: {e}", exc_info=True)
 
+    # def insert_alerts(self, alerts):
+    #     """Thêm danh sách alert vào db và cập nhật cache."""
+    #     try:
+    #         self.cursor.executemany("""
+    #             INSERT OR IGNORE INTO alerts (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority, occur, action_taken)
+    #             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    #         """, [alert.to_tuple() for alert in alerts])
+    #         self.conn.commit()
+
+    #         logger.info(f"Đã thêm {len(alerts)} alerts vào database.")
+    #     except sqlite3.Error as e:
+    #         logger.error(f"Lỗi khi chèn alerts: {e}", exc_info=True)
+
     def insert_alerts(self, alerts):
         """Thêm danh sách alert vào db và cập nhật cache."""
         try:
-            self.cursor.executemany("""
-                INSERT OR IGNORE INTO alerts (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority, occur, action_taken)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, [alert.to_tuple() for alert in alerts])
-            self.conn.commit()
+            for alert in alerts:
+                
+                # Kiểm tra xem đã có bản ghi nào có src_IP, dst_IP, protocol với action_taken = 1 hay chưa
+                self.cursor.execute("""
+                    SELECT action_taken
+                    FROM alerts
+                    WHERE src_IP = ? AND dst_IP = ? AND protocol = ?
+                    ORDER BY timestamp DESC
+                    LIMIT 1
+                """, (alert.src_IP, alert.dst_IP, alert.protocol))
+                result = self.cursor.fetchone()
 
+                # Nếu tìm thấy và action_taken = 1, gán action_taken của bản ghi mới là 1
+                if result and result["action_taken"] == True:
+                    alert.action_taken = True
+                elif alert.priority == '1' or alert.priority == '2':
+                    self.file_modifier.block_fastest(alert)
+                    alert.action_taken = True
+
+                # Chèn hoặc bỏ qua bản ghi nếu đã tồn tại (UNIQUE constraint)
+                self.cursor.execute("""
+                    INSERT OR IGNORE INTO alerts (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority, occur, action_taken)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, alert.to_tuple())
+            
+            self.conn.commit()
             logger.info(f"Đã thêm {len(alerts)} alerts vào database.")
         except sqlite3.Error as e:
             logger.error(f"Lỗi khi chèn alerts: {e}", exc_info=True)
+
 
     def get_recent_alerts(self, limit=None):
         """Lấy số lượng alerts gần nhất theo limit (mặc định là max_alerts)."""
