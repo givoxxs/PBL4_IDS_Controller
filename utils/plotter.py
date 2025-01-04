@@ -106,3 +106,8 @@ class Plotter:
         ax.set_ylabel('Occurrences')
         ax.set_title(f'Top {top_n} Triggered Rules')
         plt.setp(ax.get_xticklabels(), rotation=30, ha="right")
+
+    def set_defaults(self, defaults):
+        # update plotter attributes based on config
+        self.default_colors = defaults.get("colors", self.default_colors) #Default colors if not specified
+        self.default_font_size = defaults.get("font_size", self.default_font_size)
