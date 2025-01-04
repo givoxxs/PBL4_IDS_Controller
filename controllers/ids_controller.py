@@ -40,7 +40,6 @@ class IDSController:
     def get_alerts_by_action_taken(self, filter_criteria=None, page=1, per_page=100):
         """Lấy danh sách alerts đã xử lý và phân trang"""
         offset = self._apply_pagination(page, per_page)
-
         try:
              alerts = self.data_manager.get_alerts_by_action_taken(limit=per_page, offset=offset)
              return alerts
