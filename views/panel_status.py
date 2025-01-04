@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 from utils.check_services_status import check_snort_status, check_UFW_status
 from matplotlib import rcParams
+from tkinter import messagebox
 
 class PanelStatus(tk.Frame):
     def __init__(self, parent, controller):
@@ -52,4 +53,5 @@ class PanelStatus(tk.Frame):
         self.snort_status_text.delete("1.0", tk.END)
         self.UFW_status_text.delete("1.0", tk.END)
         self.check_status()
+        messagebox.showinfo("Thông báo", "Dữ liệu đã được làm mới.")
         

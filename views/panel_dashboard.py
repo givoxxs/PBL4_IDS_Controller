@@ -1,20 +1,29 @@
 import tkinter as tk
-from tkinter import ttk
+from tkinter import ttk, messagebox
 from utils.plotter import Plotter
 import matplotlib.pyplot as plt  # type: ignore
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib import rcParams
 from controllers.ids_controller import IDSController
+import threading
+import time
 
 class PanelDashboard(tk.Frame):
     def __init__(self, parent, controller: IDSController):
         super().__init__(parent)
         self.controller = controller
         self.alerts = []
+        self.active_popup = None # Track if popup is already open
         # Matplotlib configuration for tighter layout
         rcParams.update({'figure.autolayout': True})  # Adjust layout to prevent labels from overlapping
         self.create_widgets()
         self.update_data()
+        
+        # Start the threat detection thread
+        self.threat_detection_thread = threading.Thread(target=self.detect_high_priority_threats, daemon=True)
+        self.threat_detection_thread.start()
+        self.stop_thread = False
+        
 
     def create_widgets(self):
         # Frame Summary
@@ -121,10 +130,11 @@ class PanelDashboard(tk.Frame):
         self.after(300000, self.update_data)  # Update every 5 minutes
         
     def refresh_data(self):
-        """Refresh data on the dashboard."""
+        """Refresh all data displayed on the dashboard."""
+        # Fetch new alerts
         self.alerts = self.controller.get_alerts()
 
-        # Update alert counts
+        # Update summary labels
         self.total_alerts_label.config(text=f"Total Alerts: {len(self.alerts)}")
         unhandled_alerts = [alert for alert in self.alerts if not alert.action_taken]
         self.unhandled_alerts_label.config(text=f"Unhandled Alerts: {len(unhandled_alerts)}")
@@ -138,6 +148,9 @@ class PanelDashboard(tk.Frame):
         # Update listboxes
         self.update_top_ips_listbox()
         self.update_top_rules_listbox()
+
+        messagebox.showinfo("Refresh Complete", "Dashboard data has been refreshed.")
+
 
     def switch_chart(self, chart_type):
         """Switch between charts."""
@@ -185,3 +198,60 @@ class PanelDashboard(tk.Frame):
         self.top_rules_listbox.delete(0, tk.END)
         for rule, count in top_rules.items():
             self.top_rules_listbox.insert(tk.END, f"{rule}: {count}")
+            
+    def detect_high_priority_threats(self):
+        while not self.stop_thread:
+            time.sleep(300) # Check for high-priority threats every 5 minutes
+            if self.alerts:
+                high_priority_alerts = [
+                    alert for alert in self.alerts
+                    if not alert.action_taken and (alert.occurrence > 20 or alert.priority <= 2)
+                ]
+                if high_priority_alerts and self.active_popup is None:
+                   self.after(0, lambda alerts=high_priority_alerts: self.show_threat_popup(alerts))
+
+    def show_threat_popup(self, alerts):
+        self.active_popup = tk.Toplevel(self)
+        self.active_popup.title("High-Priority Threats Detected")
+        self.active_popup.protocol("WM_DELETE_WINDOW", self.close_popup)
+
+        # Display each threat in the popup
+        for alert in alerts:
+            alert_frame = ttk.LabelFrame(self.active_popup, text=f"Alert ID: {alert.id}")
+            alert_frame.pack(pady=5, padx=10, fill=tk.X)
+            
+            ttk.Label(alert_frame, text=f"Time: {alert.time}").pack(anchor=tk.W)
+            ttk.Label(alert_frame, text=f"Source IP: {alert.source_ip}").pack(anchor=tk.W)
+            ttk.Label(alert_frame, text=f"Destination IP: {alert.destination_ip}").pack(anchor=tk.W)
+            ttk.Label(alert_frame, text=f"Rule: {alert.rule_name}").pack(anchor=tk.W)
+            ttk.Label(alert_frame, text=f"Priority: {alert.priority}").pack(anchor=tk.W)
+            ttk.Label(alert_frame, text=f"Occurrence: {alert.occurrence}").pack(anchor=tk.W)
+            
+            # Create action buttons for each alert
+            action_frame = tk.Frame(alert_frame)
+            action_frame.pack(fill=tk.X, pady=5, padx=5)
+            
+            actions = ["Safe", "Limit", "Block", "Ignore"]
+            for action in actions:
+                button = ttk.Button(action_frame, text=action, command=lambda a=action, alert_id = alert.id: self.handle_action(alert_id, a))
+                button.pack(side=tk.LEFT, padx=2)
+
+
+    def close_popup(self):
+         if self.active_popup:
+            self.active_popup.destroy()
+            self.active_popup = None
+
+    def handle_action(self, alert_id, action):
+        """Handles actions taken on a threat (e.g., Safe, Limit, Block, Ignore)."""
+        # Logic to handle action
+        print(f"Action: {action} for alert ID: {alert_id}")
+        self.controller.handle_alert_action(alert_id,action)
+        self.close_popup() # Close popup after user has chosen an action
+        self.refresh_data()
+    
+    def on_closing(self):
+      self.stop_thread = True
+      if self.active_popup:
+         self.active_popup.destroy()
+      self.destroy()
