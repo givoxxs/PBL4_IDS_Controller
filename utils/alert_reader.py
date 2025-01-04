@@ -8,14 +8,16 @@ class AlertReader:
     """
     Đọc file CSV chứa thông tin alert và tạo đối tượng Alert.
     """
-    def __init__(self, file_path):
+    def __init__(self, file_path, separator=","):
         """
         Khởi tạo đối tượng AlertReader.
 
         Args:
             file_path (str): Đường dẫn đến file CSV.
+            separator (str, optional): Ký tự phân tách giữa các trường trong file CSV. Mặc định là ','.
         """
         self.file_path = file_path
+        self.separator = separator  # Gán giá trị separator vào đối tượng
 
     def read_alerts(self, last_update_time=0, has_header=True):
         """
@@ -83,8 +85,7 @@ class AlertReader:
         Returns:
             tuple: Dữ liệu đã phân tích, hoặc None nếu có lỗi.
         """
-        data = line.split(",")
-
+        data = line.split(self.separator)
         if len(data) < 13:
             logger.error(f"Invalid alert line: {line}. Số trường ({len(data)}) < 13")
             return None
@@ -92,48 +93,27 @@ class AlertReader:
         timestamp = data[0].strip()
         action = data[1].strip()
         protocol = data[2].strip()
+        gid = int(data[3].strip()) if data[3].strip() else -1
+        sid = int(data[4].strip()) if data[4].strip() else -1
+        rev = int(data[5].strip()) if data[5].strip() else -1
         msg = data[6].strip('"')
         service = data[7].strip()
         src_IP = data[8].strip()
+        src_Port = int(data[9].strip()) if data[9].strip() else -1
         dst_IP = data[10].strip()
+        dst_Port = int(data[11].strip()) if data[11].strip() else -1
 
-        try:
-            gid = int(data[3]) if data[3] else -1
-        except ValueError as e:
-            logger.error(f"Error parsing gid: {data[3]} - {e}")
-            gid = -1
+        # Lấy giá trị priority từ chỉ mục 12
+        priority = data[12].strip('"')
 
-        try:
-            sid = int(data[4]) if data[4] else -1
-        except ValueError as e:
-            logger.error(f"Error parsing sid: {data[4]} - {e}")
-            sid = -1
-
-        try:
-            rev = int(data[5]) if data[5] else -1
-        except ValueError as e:
-            logger.error(f"Error parsing rev: {data[5]} - {e}")
-            rev = -1
-
-        try:
-            src_Port = int(data[9].strip()) if data[9].strip() else -1
-        except ValueError as e:
-            logger.error(f"Error parsing src_Port: {data[9]} - {e}")
-            src_Port = -1
-
-        try:
-            dst_Port = int(data[11].strip()) if data[11].strip() else -1
-        except ValueError as e:
-            logger.error(f"Error parsing dst_Port: {data[11]} - {e}")
-            dst_Port = -1
-
-        # Validate priority
-        priority = data[12].strip().lower()
         valid_priorities = ["0", "1", "2", "3"]
+
         if priority not in valid_priorities:
             logger.warning(f"Invalid priority: {priority}, using default '3'")
-            priority = "low"
+            priority = "3"
 
         occur = 1
         action_taken = 0
-        return (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, occur, action_taken, priority)
+        last_seen = None
+
+        return (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority, occur, action_taken, last_seen)

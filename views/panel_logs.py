@@ -91,7 +91,7 @@ class PanelLogs(tk.Frame):
 
         # Lấy dữ liệu theo trang hiện tại
         alerts = self.controller.get_alerts(filter_criteria=filter_criteria, page=self.page, per_page=self.per_page)
-        
+        print(f"Log panel: {alerts}") 
         for alert in alerts:
            self.tree.insert("", tk.END, values=alert.to_tuple())
 

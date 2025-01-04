@@ -134,33 +134,34 @@ class DataManager:
             """, [alert.to_tuple() for alert in alerts])
             self.conn.commit()
 
-            if len(self.alerts) + len(alerts) > self.max_alerts:
-                self.alerts = self.alerts[-(self.max_alerts - len(alerts)):] + alerts
-            else:
-                self.alerts.extend(alerts)
-
             logger.info(f"Đã thêm {len(alerts)} alerts vào database.")
         except sqlite3.Error as e:
             logger.error(f"Lỗi khi chèn alerts: {e}", exc_info=True)
 
+
     def get_alerts(self, filter_criteria=None, limit=None, offset=None):
         """Lấy danh sách alerts từ cache hoặc với filter_criteria, limit, offset."""
         logger.debug(f"get_alerts called with filter_criteria: {filter_criteria}, limit: {limit}, offset: {offset}")
+
+        self.cursor.execute("SELECT COUNT(*) FROM alerts")
+        row = self.cursor.fetchone()
+        logger.debug(f"Số lượng alerts trong database: {row[0]}")
 
         if filter_criteria is None:
             if limit is not None and offset is not None:
                 if not isinstance(limit, int) or not isinstance(offset, int):
                     raise TypeError("Limit and offset must be integers when both are provided.")
                 return self.alerts[offset:offset + limit]
-            return self.alerts[:] # Return all alerts
+            return self.alerts[:]  # Return all alerts
 
         filtered_alerts = []
         for alert in self.alerts:
+            logger.debug(f"Alert ID {alert.id} has priority: {alert.priority}")  # Debugging giá trị priority khi lấy từ cache
             match = True
             for key, value in filter_criteria.items():
-               if  hasattr(alert, key) and getattr(alert,key) != value:
-                   match = False
-                   break
+                if hasattr(alert, key) and getattr(alert, key) != value:
+                    match = False
+                    break
             if match:
                 filtered_alerts.append(alert)
 
@@ -170,6 +171,7 @@ class DataManager:
             return filtered_alerts[offset:offset+limit]
 
         return filtered_alerts
+
 
     def get_alert_by_criteria(self, threat_data):
          try:
@@ -256,7 +258,6 @@ class DataManager:
                 for row in rows]
             return alerts
 
-
         except sqlite3.Error as e:
             logger.error(f"Lỗi khi lấy alerts đã xử lý: {e}", exc_info=True)
             print(f"SQLite Error: {e}")
@@ -279,6 +280,27 @@ class DataManager:
         except sqlite3.Error as e:
             logger.error(f"The error when finding alerts: {e}", exc_info=True)
             return []
+
+    def delete_alerts(self, filter_criteria=None):
+        """Xóa alerts từ database dựa trên các filter criteria."""
+        try:
+            # Nếu không có filter_criteria, xóa tất cả dữ liệu
+            if filter_criteria is None:
+                query = "DELETE FROM alerts"
+                self.cursor.execute(query)
+                logger.info("Đã xóa tất cả các alert từ database.")
+            else:
+                # Nếu có filter_criteria, xây dựng câu lệnh WHERE để xóa theo điều kiện
+                where_clause = "WHERE " + " AND ".join([f"{key} = ?" for key in filter_criteria.keys()])
+                values = tuple(filter_criteria.values())
+                query = f"DELETE FROM alerts {where_clause}"
+                self.cursor.execute(query, values)
+                logger.info(f"Đã xóa các alert với điều kiện {filter_criteria} từ database.")
+            
+            # Commit thay đổi vào cơ sở dữ liệu
+            self.conn.commit()
+        except sqlite3.Error as e:
+            logger.error(f"Lỗi khi xóa alerts: {e}", exc_info=True)
 
     def __del__(self):
         """Đóng kết nối database khi DataManager bị hủy."""

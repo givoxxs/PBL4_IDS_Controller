@@ -7,9 +7,10 @@ from views.panel_config import PanelConfig
 from views.panel_dashboard import PanelDashboard # Import PanelDashboard
 from views.panel_handled import PanelHandled
 from config.settings import Settings
+from controllers.ids_controller import IDSController
 
 class MainWindow(tk.Frame):
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller: IDSController):
         super().__init__(parent)
         self.controller = controller
         self.root = parent
@@ -19,7 +20,7 @@ class MainWindow(tk.Frame):
         
     def update_alerts_from_file(self):
         """Callback function for updating alerts."""
-        self.controller.data_manager.update_alerts_from_file()
+        self.controller.update_alerts_from_file()
         self.refresh_data() # Refresh all panels
         self.after_id = self.after(self.controller.data_manager.update_interval, self.update_alerts_from_file)
 
@@ -80,9 +81,10 @@ class MainWindow(tk.Frame):
             
     def refresh_data(self):
         """Refresh data and update panels."""
-        self.frames["logs"].display_alerts(self.frames["logs"].current_protocol_filter)
+        self.frames["logs"].display_alerts()
         self.frames["threats"].display_threats()
         self.frames['dashboard'].update_data()
+        self.frames['handled'].display_alerts(filter_criteria={'action_taken': 1})
 
     def run(self):
         """Chạy ứng dụng."""

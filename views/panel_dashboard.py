@@ -4,10 +4,10 @@ from utils.plotter import Plotter
 import matplotlib.pyplot as plt  # type: ignore
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib import rcParams
-
+from controllers.ids_controller import IDSController
 
 class PanelDashboard(tk.Frame):
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller: IDSController):
         super().__init__(parent)
         self.controller = controller
         self.alerts = []

@@ -3,7 +3,7 @@ from models.alert import Alert
 from services.alert_service import AlertService
 import logging
 import os
-
+import json
 logger = logging.getLogger(__name__)
 
 class IDSController:
@@ -30,7 +30,8 @@ class IDSController:
 
         offset = (page - 1) * per_page
         return offset
-    
+    def update_alerts_from_file(self):
+        return self.data_manager.update_alerts_from_file()
     def get_alerts(self, filter_criteria=None, page=1, per_page=100):
         """Lấy danh sách alerts, có thể lọc theo tiêu chí và phân trang."""
         offset = self._apply_pagination(page, per_page)
@@ -154,3 +155,18 @@ class IDSController:
          all_alerts = self.data_manager.get_alerts()  # Get all alerts from the DataManager
          protocols = set(alert.protocol for alert in all_alerts)
          return list(protocols) # return distinct list of protocols
+    def load_config(self, config_path="dashboard_config.json"):
+        try:
+            with open(config_path, 'r') as f:
+                self.config = json.load(f) # Update the config dictionary
+        except (FileNotFoundError, json.JSONDecodeError) as e:
+            print(f"Error loading config: {e}")
+            # Handle error appropriately, e.g., use default config
+
+
+    def save_config(self, config_path="dashboard_config.json"):
+        try:
+            with open(config_path, 'w') as f:
+                json.dump(self.config, f, indent=4)
+        except Exception as e:
+            print(f"Error saving config: {e}")
