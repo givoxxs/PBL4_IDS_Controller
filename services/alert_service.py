@@ -31,7 +31,7 @@ class AlertService:
         Helper function to execute the ufw command and reload ufw
         """
         result = self.file_modifier.execute_ufw_command(command)
-        print("COMMAnD - ", command)
+        # print("COMMAnD - ", command)
         self.file_modifier.reload_ufw()
         return result
 
@@ -40,7 +40,7 @@ class AlertService:
         Helper function to execute the iptables command and save the rules
         """
         result = self.file_modifier.execute_iptables_command(command)
-        print("COMMAnD iptables - ", command)
+        # print("COMMAnD iptables - ", command)
         # self.file_modifier.save_iptables_rules()
         return result
 
@@ -80,7 +80,7 @@ class AlertService:
         return self._handle_alert_action(alert, result)
     
     def block_alert(self, alert: Alert):
-        print("BLOCK THREAT - protocol: ", alert.protocol.lower)
+        # print("BLOCK THREAT - protocol: ", alert.protocol.lower)
         """Blocks traffic specified in alert using UFW or iptables."""
         if alert.protocol.lower() == 'icmp':
             # For ICMP, use iptables to specify the type (e.g., echo-request)
@@ -136,7 +136,7 @@ class AlertService:
             return "Unsupported protocol"
         
         # result = self._execute_iptables_command(command)  # Execute iptables or ufw command
-        if alert.protocol.lower() in ['ip', 'icmp']:
+        if threat_data['protocol'].lower() in ['ip', 'icmp']:
             result = self._execute_iptables_command(command)  # Execute iptables or ufw command
         else:
             result = self._execute_ufw_command(command)
@@ -159,7 +159,7 @@ class AlertService:
             return "Unsupported protocol"
         
         # result = self._execute_iptables_command(command)  # Execute iptables or ufw command
-        if alert.protocol.lower() in ['ip', 'icmp']:
+        if threat_data['protocol'].lower() in ['ip', 'icmp']:
             result = self._execute_iptables_command(command)  # Execute iptables or ufw command
         else:
             result = self._execute_ufw_command(command)

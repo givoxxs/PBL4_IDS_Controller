@@ -55,9 +55,9 @@ class FileModifier:
         """Reload UFW (Ubuntu)."""
         try:
             result = subprocess.run(['sudo', 'ufw', 'disable'], capture_output=True, text=True, check=True) # check=True để raise exception nếu lỗi
-            print(f"From file_modifier, {result.stdout}") # In ra output nếu cần
+            # print(f"From file_modifier, {result.stdout}") # In ra output nếu cần
             result = subprocess.run(['sudo','ufw', 'enable'], capture_output=True, text=True, check=True)
-            print(f"From file_modifier, {result.stdout}")
+            # print(f"From file_modifier, {result.stdout}")
             return "UFW reloaded successfully"
         except subprocess.CalledProcessError as e:
             print(f"Lỗi khi reload UFW: {e}")
@@ -86,7 +86,7 @@ class FileModifier:
     def execute_ufw_command(self, command):
         """Thực thi command UFW (Ubuntu)."""
         try:
-            print("Command 1 - ", command)
+            # print("Command 1 - ", command)
             result = subprocess.run(command.split(), capture_output=True, text=True, check=True)
             output = result.stdout.strip()
             return f"Command executed successfully. Output:\n{output}"
@@ -100,7 +100,7 @@ class FileModifier:
     
     def block_fastest(self, alert: Alert):
 
-        print("BLOCK Fastest - protocol: ", alert.protocol.lower())
+        # print("BLOCK Fastest - protocol: ", alert.protocol.lower())
         """Blocks traffic specified in alert using UFW or iptables."""
         if alert.protocol.lower() == 'icmp':
             # For ICMP, use iptables to specify the type (e.g., echo-request)
@@ -123,7 +123,7 @@ class FileModifier:
         return result
 
     def execute_iptables_command(self, command):
-        print("Command IPtables - ", command)
+        # print("Command IPtables - ", command)
         """Execute an iptables command and save the rules."""
         try:
             result = subprocess.run(command.split(), capture_output=True, text=True, check=True)

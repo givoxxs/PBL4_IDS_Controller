@@ -50,12 +50,12 @@ class DataManager:
         
     def reload_config(self):
         """Tải lại cấu hình từ file config.json."""
-        print("RELOAD CONFIG")
+        # print("RELOAD CONFIG")
         self._config = self._load_config()
         self.update_interval = self._config.get("update_interval", 60) * 1000  # milliseconds
         self.max_alerts = self._config.get("max_alerts", 5000)
-        print("UPDATE_Internal: ", self.update_interval)
-        print("MAX ALERTS: ", self.max_alerts)
+        # print("UPDATE_Internal: ", self.update_interval)
+        # print("MAX ALERTS: ", self.max_alerts)
         logger.info("Đã tải lại cấu hình từ config.json.")
 
     def _update_alerts_from_file_callback(self):
@@ -111,7 +111,7 @@ class DataManager:
                     UNIQUE (timestamp, src_IP, dst_IP, protocol)
                 )
             """)
-            print("Tạo bảng thành công")
+            # print("Tạo bảng thành công")
             self.create_indices()
             self.conn.commit()
             logger.info("Tạo bảng thành công")
@@ -146,9 +146,8 @@ class DataManager:
     def insert_alerts(self, alerts):
         """Thêm danh sách alert vào db và cập nhật cache."""
         try:
-            high_priority_alerts = []
             for alert in alerts:
-                if alert.priority in {'1', '2'}:
+                if alert.priority in ['1','2']:
                     self.cursor.execute("""
                         SELECT action_taken
                         FROM alerts
@@ -158,20 +157,18 @@ class DataManager:
                     """, (alert.src_IP, alert.dst_IP, alert.protocol))
                     result = self.cursor.fetchone()
 
+                    # print("result - ", result)
+
                     if result and result["action_taken"] == True:
                         alert.action_taken = True
                     else:
                         self.file_modifier.block_fastest(alert)
                         alert.action_taken = True
-
-                # Gom các alert để chèn theo batch
-                high_priority_alerts.append(alert.to_tuple())
-
-            # Batch Insert
-            self.cursor.executemany("""
-                INSERT OR IGNORE INTO alerts (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority, occur, action_taken)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, high_priority_alerts)
+                # Chèn hoặc bỏ qua bản ghi nếu đã tồn tại (UNIQUE constraint)
+                self.cursor.execute("""
+                    INSERT OR IGNORE INTO alerts (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority, occur, action_taken)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, alert.to_tuple())
             self.conn.commit()
             logger.info(f"Đã thêm {len(alerts)} alerts vào database.")
         except sqlite3.Error as e:
