@@ -68,7 +68,7 @@ class PanelDashboard(tk.Frame):
 
         # Frame Top Attacking IPs
         top_ips_frame = ttk.LabelFrame(self, text="Top Attacking IPs")
-        top_ips_frame.grid(row=0, column=2, padx=10, pady=(10, 0), sticky="nsew")
+        top_ips_frame.grid(row=0, column=2, padx=5, pady=(10, 0), ipadx= 20, ipady=10, sticky="nsew")
 
         self.top_ips_listbox = tk.Listbox(top_ips_frame)
         self.top_ips_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
@@ -79,7 +79,7 @@ class PanelDashboard(tk.Frame):
 
         # Frame Top Alert Rules
         top_rules_frame = ttk.LabelFrame(self, text="Top Alert Rules")
-        top_rules_frame.grid(row=1, column=2, padx=10, pady=(10, 0), sticky="nsew")
+        top_rules_frame.grid(row=1, column=2, padx=5, pady=(10, 0), sticky="nsew")
 
         self.top_rules_listbox = tk.Listbox(top_rules_frame)
         self.top_rules_listbox.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)

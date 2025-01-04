@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as mb
 from controllers.ids_controller import IDSController
+
 class PanelThreats(tk.Frame):
 
     def __init__(self, parent, controller: IDSController):
