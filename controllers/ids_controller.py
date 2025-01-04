@@ -55,6 +55,8 @@ class IDSController:
     def _update_alert_action(self, alert, action):
         if IDSController.SUCCESS_MESSAGE in action or action == IDSController.IGNORE_MESSAGE:
             alert.action_taken = 1
+            alert.action = action.title()
+            print(f"from ids update alert action {action}")
             self.data_manager.update_alert(alert)
 
     async def _async_handle_action(self, alert, action):
@@ -93,13 +95,13 @@ class IDSController:
 
     def _process_threat_action(self, threat_data, action):
         if action == IDSController.SAFE_ACTION:
-            result = self.alert_service.safe_threat(threat_data)
+            result = self.alert_service.safe_threat(action, threat_data)
         elif action == IDSController.IGNORE_ACTION:
-            result = self.alert_service.ignore_threat(threat_data)
+            result = self.alert_service.ignore_threat(action, threat_data)
         elif action == IDSController.LIMIT_ACTION:
-            result = self.alert_service.limit_threat(threat_data)
+            result = self.alert_service.limit_threat(action, threat_data)
         elif action == IDSController.BLOCK_ACTION:
-            result = self.alert_service.block_threat(threat_data)
+            result = self.alert_service.block_threat(action, threat_data)
         else:
             result = IDSController.INVALID_ACTION
         return result

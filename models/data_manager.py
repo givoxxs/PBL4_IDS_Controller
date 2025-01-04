@@ -185,10 +185,13 @@ class DataManager:
     def update_alert(self, alert):
         """Cập nhật alert trong database.""" 
         try:
-            self.cursor.execute(""" 
-                UPDATE alerts SET action_taken = ? WHERE src_IP = ?
-            """, (alert.action_taken, alert.src_IP))
+            self.cursor.execute("""
+            UPDATE alerts 
+            SET action_taken = ?, action = ? 
+            WHERE src_IP = ? AND dst_IP = ? AND protocol = ?
+            """, (alert.action_taken, alert.action, alert.src_IP, alert.dst_IP, alert.protocol))
             self.conn.commit()
+
         except sqlite3.Error as e:
             logger.error(f"Lỗi khi cập nhật alert: {e}", exc_info=True)
 
