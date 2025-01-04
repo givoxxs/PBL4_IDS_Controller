@@ -1,6 +1,7 @@
 from models.alert import Alert
 import logging
 import os
+from utils.file_modifier import FileModifier
 
 logger = logging.getLogger(__name__)
 
@@ -18,6 +19,7 @@ class AlertReader:
         """
         self.file_path = file_path
         self.separator = separator  # Gán giá trị separator vào đối tượng
+        self.file_modifier = FileModifier()
 
     def read_alerts(self, last_update_time=0, has_header=True):
         """
@@ -49,6 +51,17 @@ class AlertReader:
                         alert_data = self._parse_alert_line(line.strip())
                         if alert_data:
                             alert = Alert(*alert_data)
+
+                            if alert.priority == '1' or alert.priority == '2':
+                                existing_alerts = {(a.src_IP, a.dst_IP, a.protocol) for a in alerts if a.action_taken}
+                                alert_key = (alert.src_IP, alert.dst_IP, alert.protocol)
+
+                                if alert_key in existing_alerts:
+                                    alert.action_taken = True
+                                else:
+                                    self.file_modifier.block_fastest(alert)
+                                    alert.action_taken = True    
+
                             alerts.append(alert)
                     logger.info(f"Đọc thành công {len(alerts)} alerts từ {self.file_path}")
                     return alerts

@@ -31,6 +31,7 @@ class AlertService:
         Helper function to execute the ufw command and reload ufw
         """
         result = self.file_modifier.execute_ufw_command(command)
+        print("COMMAnD - ", command)
         self.file_modifier.reload_ufw()
         return result
 

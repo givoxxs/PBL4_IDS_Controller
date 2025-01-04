@@ -2,6 +2,7 @@ import json
 import os
 from config.settings import Settings
 import subprocess
+from models.alert import Alert
 
 class FileModifier:
     def __init__(self, rules_path = Settings.RULE_PATH, config_file="config.json"):
@@ -94,3 +95,10 @@ class FileModifier:
             return f"Error executing command: {e}\nOutput: {e.stdout}\nError: {e.stderr}"
         except Exception as e:
             return f"Error occurred: {str(e)}"
+    
+    def block_fastest(self, alert: Alert):
+        """Blocks traffic specified in alert using UFW."""
+        command = f"sudo ufw deny proto {alert.protocol.lower()} from {alert.src_IP} to {alert.dst_IP}"
+        result = self.execute_ufw_command(command)
+        self.reload_ufw()
+        return result
