@@ -129,9 +129,9 @@ class AlertReader:
 
         # Validate priority
         priority = data[12].strip().lower()
-        valid_priorities = ["critical", "high", "medium", "low"]
+        valid_priorities = ["0", "1", "2", "3"]
         if priority not in valid_priorities:
-            logger.warning(f"Invalid priority: {priority}, using default 'low'")
+            logger.warning(f"Invalid priority: {priority}, using default '3'")
             priority = "low"
 
         occur = 1

@@ -37,63 +37,65 @@ class PanelHandled(tk.Frame):
         self.next_button = ttk.Button(pagination_frame, text="Next", command=self.next_page)
         self.next_button.pack(side = tk.LEFT)
             
-    def display_alerts(self, filter_criteria = {'action_taken': 1}): # thêm tham số lọc
+    def display_alerts(self, filter_criteria={'action_taken': 1}):
         print("Loading handled panel")
-        # ... (xóa dữ liệu cũ trong tree)
         for i in self.tree.get_children():
             self.tree.delete(i)
-            
-        self.filter_criteria = filter_criteria # Biến lưu trữ filter hiện tại
-        
-        self.update_pagination(filter_criteria) # tính toán số trang và cập nhật lại page label
 
-        # Lấy dữ liệu theo trang hiện tại
-        alerts = self.controller.get_alerts_by_action_taken(filter_criteria=filter_criteria, page=self.page, per_page=self.per_page)
-        print(f"alert from handled.py, {alerts}")
+        self.filter_criteria = filter_criteria
+        self.update_pagination(filter_criteria)
 
-        for alert in alerts:
-            self.tree.insert("", tk.END, values=alert.to_tuple())
+        alerts = self.controller.get_alerts_by_action_taken(
+            filter_criteria=filter_criteria, page=self.page, per_page=self.per_page
+        )
+
+        if not alerts:
+            self.tree.insert("", tk.END, values=("No data",) * len(Alert.get_columns()))
+            return
+
+        for alert_dict in alerts:
+            try:
+                alert_dict = alert_dict.to_dict()
+                alert = Alert(
+                    timestamp=alert_dict.get("timestamp", "Unknown"),
+                    src_IP=alert_dict.get("src_IP", "Unknown"),
+                    dst_IP=alert_dict.get("dst_IP", "Unknown"),
+                    protocol=alert_dict.get("protocol", "Unknown"),
+                    action=alert_dict.get("action", "Unknown"),
+                    gid=alert_dict.get("gid", "Unknown"),
+                    sid=alert_dict.get("sid", "Unknown"),
+                    rev=alert_dict.get("rev", "Unknown"),
+                    msg=alert_dict.get("msg", "Unknown"),
+                    service=alert_dict.get("service", "Unknown"),
+                    src_Port=alert_dict.get("src_Port", 0),
+                    dst_Port=alert_dict.get("dst_Port", 0),
+                    action_taken=alert_dict.get("action_taken", "Unknown"),
+                    priority=alert_dict.get("priority", "Unknown"),
+                    occur=alert_dict.get("occur", 0),
+                )
+                self.tree.insert("", tk.END, values=alert.to_tuple())
+            except Exception as e:
+                print(f"Error displaying alert: {e}")
+                continue
+
+
             
     def update_pagination(self, filter_criteria=None):
         """Cập nhật thông tin phân trang."""
         total_alerts = self.controller.get_total_alerts(filter_criteria=filter_criteria)  # tính tổng alert với filter hiện tại
         total_pages = (total_alerts + self.per_page - 1) // self.per_page  # Tính tổng số trang
-        self.page_label.config(text=f"Page {self.page}/{total_pages}")
+        self.page_label.config(text=f"Page {self.page}/{total_pages}")  # Hiển thị thông tin phân trang
         
-        total_alerts = self.controller.get_total_alerts(filter_criteria=filter_criteria) # tính tổng alert với filter hiện tại
-        total_pages = (total_alerts + self.per_page -1) // self.per_page # Tính tổng số trang
-        self.page_label.config(text=f"Page {self.page}/{total_pages}")
-        # kích hoạt/vô hiệu hóa button prev và next
-        self.prev_button.config(state=tk.NORMAL if self.page> 1 else tk.DISABLED)
+        # Kích hoạt/vô hiệu hóa button prev và next
+        self.prev_button.config(state=tk.NORMAL if self.page > 1 else tk.DISABLED)
         self.next_button.config(state=tk.NORMAL if self.page < total_pages else tk.DISABLED)
 
-        
-        if self.page == 1:
-            self.prev_button.config(state=tk.DISABLED)
-        else:
-            self.prev_button.config(state=tk.NORMAL)
-            
-        if total_pages > self.page :
-            self.next_button.config(state=tk.NORMAL)
-        else:
-            self.next_button.config(state=tk.DISABLED)
-            
+
     def prev_page(self):
         """Chuyển đến trang trước."""
         if self.page > 1:
             self.page -= 1
-            
-            if hasattr(self, 'current_protocol_filter'):
-                filter = self.current_protocol_filter
-            else:
-                filter = "Tất cả"
-            if filter.lower() == "tất cả":
-                filter_criteria = None  # Không lọc nếu là "Tất cả"
-            else:
-                filter_criteria = {"protocol": filter}
-            self.display_alerts(filter) # Refresh data
-            self.update_pagination(filter_criteria) # Update buttons with filter
-
+            self.display_threats(self.page)
 
     def next_page(self):
         """Chuyển đến trang sau."""

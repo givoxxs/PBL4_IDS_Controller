@@ -229,7 +229,7 @@ class DataManager:
             return []
 
     def get_alerts_by_action_taken(self, limit=None, offset=None):
-        """Lay ra cac threats da duoc xu ly"""
+        """Lấy tất cả các alert đã xử lý theo action_taken."""
         try:
             if limit is not None and (not isinstance(limit, int) or limit <= 0):
                 raise ValueError("Limit must be a positive integer.")
@@ -237,11 +237,11 @@ class DataManager:
                 raise ValueError("Offset must be a non-negative integer.")
 
             query = """
-                SELECT src_IP, dst_IP, protocol, action_taken, priority, COUNT(*) AS occur, MAX(timestamp) as last_seen
+                SELECT *, COUNT(*) AS occur, MAX(timestamp) AS last_seen
                 FROM alerts
                 WHERE action_taken = 1
-                GROUP BY src_IP, dst_IP, protocol
-                ORDER BY priority DESC, occur DESC
+                GROUP BY src_IP, dst_IP, protocol, action_taken, priority
+
             """
 
             if limit is not None and offset is not None:
@@ -249,12 +249,19 @@ class DataManager:
 
             self.cursor.execute(query)
             rows = self.cursor.fetchall()
-            return [dict(row) for row in rows]
+            alerts = [Alert(timestamp=row['timestamp'], action=row['action'], protocol=row['protocol'], 
+                gid=row['gid'], sid=row['sid'], rev=row['rev'], msg=row['msg'], service=row['service'], 
+                src_IP=row['src_IP'], src_Port=row['src_Port'], dst_IP=row['dst_IP'], dst_Port=row['dst_Port'], 
+                priority=row['priority'], occur=row['occur'], action_taken=row['action_taken'], last_seen=row['last_seen'])
+                for row in rows]
+            return alerts
+
 
         except sqlite3.Error as e:
-            logger.error(f"Lỗi khi lấy threats: {e}", exc_info=True)
+            logger.error(f"Lỗi khi lấy alerts đã xử lý: {e}", exc_info=True)
             print(f"SQLite Error: {e}")
             return []
+
 
     def search_alerts(self, filter_criteria, limit=None, offset=None):
         """Tìm kiếm alert theo filter_criteria và phân trang."""
