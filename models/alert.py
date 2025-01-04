@@ -6,7 +6,7 @@ class Alert:
     Class Alert represents a specific suspicious traffic,
     which can be blocked with a Snort or firewall rule.
     """
-    def __init__(self, timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority = 3, occur=1, action_taken=False, id=None):
+    def __init__(self, timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority, occur=1, action_taken=False, id=None):
         self.timestamp = timestamp
         self.action = action
         self.protocol = protocol

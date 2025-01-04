@@ -11,7 +11,7 @@ class PanelHandled(tk.Frame):
         self.page = 1 # Khởi tạo page
         self.per_page = 100 # mỗi trang 100 dòng
         self.create_widgets()
-        self.display_alerts() # Hiển thị alert ban đầu
+        self.display_alerts() 
 
     def create_widgets(self):
         """Tạo các widget cho Panel Handled."""
@@ -37,7 +37,8 @@ class PanelHandled(tk.Frame):
         self.next_button = ttk.Button(pagination_frame, text="Next", command=self.next_page)
         self.next_button.pack(side = tk.LEFT)
             
-    def display_alerts(self, filter_criteria = {'action_taken': True}): # thêm tham số lọc
+    def display_alerts(self, filter_criteria = {'action_taken': 1}): # thêm tham số lọc
+        print("Loading handled panel")
         # ... (xóa dữ liệu cũ trong tree)
         for i in self.tree.get_children():
             self.tree.delete(i)
@@ -47,8 +48,8 @@ class PanelHandled(tk.Frame):
         self.update_pagination(filter_criteria) # tính toán số trang và cập nhật lại page label
 
         # Lấy dữ liệu theo trang hiện tại
-        alerts = self.controller.get_alerts(filter_criteria=filter_criteria, page=self.page, per_page=self.per_page)
-        print(alerts)
+        alerts = self.controller.get_alerts_by_action_taken(filter_criteria=filter_criteria, page=self.page, per_page=self.per_page)
+        print(f"alert from handled.py, {alerts}")
 
         for alert in alerts:
             self.tree.insert("", tk.END, values=alert.to_tuple())
