@@ -9,6 +9,8 @@ class FileModifier:
         self.rules_path = rules_path
         self.config_file = config_file
         self._config = self._load_config()
+        # self.iptables_file = '/etc/iptables/iptables_rules.txt'
+        self.iptables_file = 'iptables_rules.txt'
     
     def _load_config(self):
         """Load config từ file JSON. Trả về dictionary hoặc dictionary rỗng nếu có lỗi."""
@@ -122,18 +124,34 @@ class FileModifier:
             self.reload_ufw()
         return result
 
+    
+    def _save_iptables_rules(self, command):
+        """
+        Lưu các quy tắc iptables vào tệp cấu hình
+        """
+        with open(self.iptables_file, 'a') as file:
+            file.write(command + '\n')  # Ghi quy tắc vào tệp
+    
+    def _reload_iptables_rules(self):
+        """
+        Tải lại các quy tắc iptables từ tệp cấu hình
+        """
+        with open(self.iptables_file, 'r') as file:
+            for line in file:
+                self.file_modifier.execute_iptables_command(line.strip())
+
     def execute_iptables_command(self, command):
         # print("Command IPtables - ", command)
         """Execute an iptables command and save the rules."""
         try:
             result = subprocess.run(command.split(), capture_output=True, text=True, check=True)
             output = result.stdout.strip()
-            result = subprocess.run(command.split(), capture_output=True, text=True, check=True)
-            output = result.stdout.strip()
 
-            save_command = "sudo sh -c 'iptables-save > /etc/iptables.rules'"
-            subprocess.run(save_command.split(), capture_output=True, text=True, check=True)
+            self._save_iptables_rules(command)
 
+            self._reload_iptables_rules()
+            
+            print(f"Command executed successfully. Output:\n{output}")
             return f"Command executed successfully. Output:\n{output}"
         except subprocess.CalledProcessError as e:
             return f"Error executing iptables command: {e.stderr}"

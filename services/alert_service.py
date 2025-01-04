@@ -40,8 +40,6 @@ class AlertService:
         Helper function to execute the iptables command and save the rules
         """
         result = self.file_modifier.execute_iptables_command(command)
-        # print("COMMAnD iptables - ", command)
-        # self.file_modifier.save_iptables_rules()
         return result
 
     def safe_alert(self, alert: Alert):
@@ -124,6 +122,7 @@ class AlertService:
     def limit_threat(self, threat_data: dict):
         """Limits traffic related to the threat using UFW or iptables."""
         if threat_data['protocol'].lower() == 'icmp':
+            print("ICMP LIMIT")
             # For ICMP, use iptables to specify the type (e.g., echo-request)
             command = f"sudo iptables -A INPUT -s {threat_data['src_IP']} -d {threat_data['dst_IP']} -p icmp --icmp-type echo-request -j DROP"
         elif threat_data['protocol'].lower() in ['tcp', 'udp']:

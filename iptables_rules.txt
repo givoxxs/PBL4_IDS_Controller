@@ -1,0 +1,1 @@
+sudo iptables -A INPUT -s 192.168.2.12 -d 192.168.50.12 -p icmp --icmp-type echo-request -j DROP

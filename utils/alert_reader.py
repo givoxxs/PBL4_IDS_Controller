@@ -21,6 +21,12 @@ class AlertReader:
         self.separator = separator  # Gán giá trị separator vào đối tượng
         self.file_modifier = FileModifier()
 
+    def _safe_int(self, value, default=-1):
+        try:
+            return int(value)
+        except ValueError:
+            return default
+
     def read_alerts(self, last_update_time=0, has_header=True):
         """
         Đọc các alert từ file CSV, chỉ đọc nếu file đã được cập nhật.
@@ -77,6 +83,8 @@ class AlertReader:
         """
         expected_header = "timestamp,action,protocol,gid,sid,rev,msg,service,src_IP,src_Port,dst_IP,dst_Port,priority"
         return header.strip().lower() == expected_header.lower()
+    
+
 
     def _parse_alert_line(self, line):
         """
@@ -99,12 +107,18 @@ class AlertReader:
         gid = int(data[3].strip()) if data[3].strip() else -1
         sid = int(data[4].strip()) if data[4].strip() else -1
         rev = int(data[5].strip()) if data[5].strip() else -1
+        # gid = self._safe_int(data[3].strip())
+        # sid = self._safe_int(data[4].strip())
+        # rev = self._safe_int(data[5].strip())
         msg = data[6].strip('"')
         service = data[7].strip()
         src_IP = data[8].strip()
         src_Port = int(data[9].strip()) if data[9].strip() else -1
         dst_IP = data[10].strip()
         dst_Port = int(data[11].strip()) if data[11].strip() else -1
+        # src_Port = self._safe_int(data[9].strip())
+        # dst_IP = data[10].strip()
+        # dst_Port = self._safe_int(data[11].strip())
 
         # Lấy giá trị priority từ chỉ mục 12
         priority = data[12].strip()
