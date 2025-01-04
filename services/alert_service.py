@@ -95,6 +95,8 @@ class AlertService:
         command = f"sudo ufw deny proto {threat_data['protocol'].lower()} from {threat_data['src_IP']} to {threat_data['dst_IP']}"
         result = self._execute_ufw_command(command)
         
+        print("Commadn in func block threat: ", command)
+
         self._mark_threat_alerts_actioned(threat_data, result)
         return result
 
@@ -107,6 +109,7 @@ class AlertService:
             "dst_IP": threat_data['dst_IP'],
             "protocol": threat_data['protocol']
         }
+
         alerts = self.data_manager.get_alerts(filter_criteria)
         for alert in alerts:
             self._handle_alert_action(alert, action_result)

@@ -16,6 +16,8 @@ class MainWindow(tk.Frame):
         self.root = parent
         self.root.title(Settings.APP_TITLE)
         self.root.geometry(f"{Settings.APP_WIDTH}x{Settings.APP_HEIGHT}")
+        # Đăng ký sự kiện đóng cửa sổ
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
         self.create_widgets()
         
     def update_alerts_from_file(self):
@@ -71,6 +73,11 @@ class MainWindow(tk.Frame):
         self.frames["handled"] = panel_handled
 
 
+    def on_close(self):
+        """Hàm xử lý khi đóng cửa sổ."""
+        if hasattr(self, 'after_id'):
+            self.root.after_cancel(self.after_id)
+        self.root.quit()  # Dừng vòng lặp mainloop và thoát
 
 
     def show_frame(self, frame_name):

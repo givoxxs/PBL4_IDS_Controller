@@ -1,3 +1,4 @@
+altgraph==0.17.4
 certifi==2024.8.30
 charset-normalizer==3.4.0
 colorama==0.4.6
@@ -14,6 +15,8 @@ packaging==24.1
 pandas==2.2.3
 pillow==11.0.0
 pluggy==1.5.0
+pyinstaller==6.11.1
+pyinstaller-hooks-contrib==2024.11
 pyparsing==3.2.0
 pytest==8.3.3
 python-dateutil==2.9.0.post0
@@ -22,6 +25,7 @@ requests==2.32.3
 scapy==2.6.1
 scikit-learn==1.5.2
 scipy==1.14.1
+setuptools==75.6.0
 six==1.16.0
 threadpoolctl==3.5.0
 tzdata==2024.2

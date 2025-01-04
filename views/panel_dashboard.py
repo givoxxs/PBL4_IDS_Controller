@@ -109,7 +109,9 @@ class PanelDashboard(tk.Frame):
 
     def update_data(self):
         """Update data on the dashboard."""
-        self.alerts = self.controller.get_alerts()
+        # self.alerts = self.controller.data_manager.get_recent_alerts()
+        if hasattr(self.controller, "data_manager"):
+            self.alerts = self.controller.data_manager.get_recent_alerts()
 
         # Update alert counts
         self.total_alerts_label.config(text=f"Total Alerts: {len(self.alerts)}")

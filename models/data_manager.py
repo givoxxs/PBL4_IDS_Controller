@@ -16,7 +16,15 @@ class DatabaseConnectionError(Exception):
 class DataManager:
     def __init__(self, root):
         self.root = root
+
+        if not os.path.exists("data"):
+            os.makedirs("data")
+
         self.db_path = os.path.join("data", "ids_data.db") 
+        if not os.path.isfile(self.db_path):
+            with open(self.db_path, 'w'):
+                pass
+
         self._config = self._load_config()
         
         self.update_interval = self._config.get("update_interval", 60) * 1000  # milliseconds
@@ -38,7 +46,15 @@ class DataManager:
         self.init_db_from_file()
         self.last_update_time = 0  # Thờai điểm cập nhật lần cuối (timestamp)
         
-
+    def reload_config(self):
+        """Tải lại cấu hình từ file config.json."""
+        print("RELOAD CONFIG")
+        self._config = self._load_config()
+        self.update_interval = self._config.get("update_interval", 60) * 1000  # milliseconds
+        self.max_alerts = self._config.get("max_alerts", 5000)
+        print("UPDATE_Internal: ", self.update_interval)
+        print("MAX ALERTS: ", self.max_alerts)
+        logger.info("Đã tải lại cấu hình từ config.json.")
 
     def _update_alerts_from_file_callback(self):
        """
@@ -138,45 +154,39 @@ class DataManager:
         except sqlite3.Error as e:
             logger.error(f"Lỗi khi chèn alerts: {e}", exc_info=True)
 
+    def get_recent_alerts(self, limit=None):
+        """Lấy số lượng alerts gần nhất theo limit (mặc định là max_alerts)."""
+        try:
+            limit = limit or self.max_alerts
+            query = f"SELECT * FROM alerts ORDER BY timestamp DESC LIMIT {limit}"
+            self.cursor.execute(query)
+            rows = self.cursor.fetchall()
+            alerts = []
+            for row in rows:
 
-    # def get_alerts(self, filter_criteria=None, limit=None, offset=None):
-    #     """Lấy danh sách alerts từ cache hoặc với filter_criteria, limit, offset."""
-    #     logger.debug(f"get_alerts called with filter_criteria: {filter_criteria}, limit: {limit}, offset: {offset}")
+              column_names = [desc[0] for desc in self.cursor.description]
+              id_index = column_names.index("id")  if "id" in column_names else -1
+              
+              if id_index >= 0:
+                  row_without_id = list(row)
+                  row_without_id.pop(id_index)  # Remove the 'id' field from the tuple
+                  alerts.append(Alert(*row_without_id, last_seen=None))  # Create Alert objects
+              else:
+                  alerts.append(Alert(*row, last_seen=None))  # Create Alert objects
 
-    #     self.cursor.execute("SELECT COUNT(*) FROM alerts")
-    #     row = self.cursor.fetchone()
-    #     logger.debug(f"Số lượng alerts trong database: {row[0]}")
 
-    #     if filter_criteria is None:
-    #         if limit is not None and offset is not None:
-    #             if not isinstance(limit, int) or not isinstance(offset, int):
-    #                 raise TypeError("Limit and offset must be integers when both are provided.")
-    #             return self.alerts[offset:offset + limit]
-    #         return self.alerts[:]  # Return all alerts
-
-    #     filtered_alerts = []
-    #     for alert in self.alerts:
-    #         logger.debug(f"Alert ID {alert.id} has priority: {alert.priority}")  # Debugging giá trị priority khi lấy từ cache
-    #         match = True
-    #         for key, value in filter_criteria.items():
-    #             if hasattr(alert, key) and getattr(alert, key) != value:
-    #                 match = False
-    #                 break
-    #         if match:
-    #             filtered_alerts.append(alert)
-
-    #     if limit is not None and offset is not None:
-    #         if not isinstance(limit, int) or not isinstance(offset, int):
-    #             raise TypeError("Limit and offset must be integers when both are provided.")
-    #         return filtered_alerts[offset:offset+limit]
-
-    #     return filtered_alerts
+            return alerts
+        except sqlite3.Error as e:
+            logger.error(f"Lỗi khi lấy alerts gần nhất: {e}", exc_info=True)
+            return []
 
     def get_alerts(self, filter_criteria=None, limit=None, offset=None):
         """Retrieves alerts from the data storage, applying filters and pagination."""
         # 1.  Build a SQL query based on filter_criteria
         query = "SELECT * FROM alerts"
         where_clauses = []
+
+        # print("filter in get alerts: ", filter_criteria)
 
         if filter_criteria:
             for key, value in filter_criteria.items():
@@ -235,9 +245,9 @@ class DataManager:
         """Cập nhật alert trong database."""
         try:
             self.cursor.execute("""
-                UPDATE alerts SET action_taken = ? WHERE src_IP = ?
-            """, (alert.action_taken, alert.src_IP))
-            print(f"Data manager action_taken: ", {alert.action_taken})
+                UPDATE alerts SET action_taken = ? WHERE src_IP = ? AND dst_IP = ? AND protocol = ?
+            """, (alert.action_taken, alert.src_IP, alert.dst_IP, alert.protocol))
+            # print(f"Data manager action_taken: ", {alert.action_taken})
             self.conn.commit()
         except sqlite3.Error as e:
             logger.error(f"Lỗi khi cập nhật alert: {e}", exc_info=True)

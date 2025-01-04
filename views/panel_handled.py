@@ -47,7 +47,7 @@ class PanelHandled(tk.Frame):
 
     def display_alerts(self, filter_criteria={'action_taken': 1}):
         """Hiển thị danh sách cảnh báo đã xử lý."""
-        print("Loading handled panel")
+        # print("Loading handled panel")
         for i in self.tree.get_children():
             self.tree.delete(i)
 

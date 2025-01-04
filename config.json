@@ -1,6 +1,6 @@
 {
     "sid": 1000016,
     "threshold": 10,
-    "update_interval": 60,
-    "max_alerts": 5000
+    "update_interval": 3,
+    "max_alerts": 6000
 }

@@ -85,6 +85,7 @@ class FileModifier:
     def execute_ufw_command(self, command):
         """Thực thi command UFW (Ubuntu)."""
         try:
+            print("Command - ", command)
             result = subprocess.run(command.split(), capture_output=True, text=True, check=True)
             output = result.stdout.strip()
             return f"Command executed successfully. Output:\n{output}"

@@ -104,7 +104,7 @@ class AlertReader:
         dst_Port = int(data[11].strip()) if data[11].strip() else -1
 
         # Lấy giá trị priority từ chỉ mục 12
-        priority = data[12].strip('"')
+        priority = data[12].strip()
 
         valid_priorities = ["0", "1", "2", "3"]
 
