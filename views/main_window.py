@@ -4,10 +4,13 @@ from views.panel_status import PanelStatus
 from views.panel_logs import PanelLogs
 from views.panel_threats import PanelThreats
 from views.panel_config import PanelConfig
-from views.panel_dashboard import PanelDashboard # Import PanelDashboard
+from views.panel_dashboard import PanelDashboard
 from views.panel_handled import PanelHandled
 from config.settings import Settings
 from controllers.ids_controller import IDSController
+import logging
+
+logger = logging.getLogger(__name__)
 
 class MainWindow(tk.Frame):
     def __init__(self, parent, controller: IDSController):
@@ -22,10 +25,10 @@ class MainWindow(tk.Frame):
 
     def update_alerts_from_file(self):
         """Callback function for updating alerts."""
+        logger.info("Updating alerts from file")
         self.controller.update_alerts_from_file()
         self.refresh_data() # Refresh all panels
         self.after_id = self.after(self.controller.data_manager.update_interval, self.update_alerts_from_file)
-
 
     def __del__(self):
         """Hủy bỏ lịch cập nhật khi đóng cửa sổ."""
@@ -81,6 +84,7 @@ class MainWindow(tk.Frame):
             
     def refresh_data(self):
         """Refresh data and update panels."""
+        logger.info("Refreshing data...")
         self.frames["logs"].display_alerts()
         self.frames["threats"].display_threats()
         self.frames['dashboard'].update_data()
@@ -94,9 +98,15 @@ class MainWindow(tk.Frame):
         # Gọi hàm update_alerts_from_file() định kỳ
         self.data_manager.update_interval = self.data_manager._config.get("update_interval", 60) * 1000
         self.after_id = self.after(self.data_manager.update_interval, self.update_alerts_from_file)
-        self.mainloop()
+    
     def on_close(self):
         """Hàm xử lý khi đóng cửa sổ."""
         if hasattr(self, 'after_id'):
             self.root.after_cancel(self.after_id)
+        
+        # Destroy all frames
+        for frame in self.frames.values():
+            frame.destroy()
+
+        self.controller.data_manager.conn.close()  # Đóng kết nối database
         self.root.quit()  # Dừng vòng lặp mainloop và thoát

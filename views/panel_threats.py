@@ -116,11 +116,10 @@ class PanelThreats(tk.Frame):
         result = loop.run_until_complete(self._process_threat_action(action, threat_dict))
         loop.close()
 
-        # Make sure to run this code in the main thread to update the UI
+        # Ensure loading screen is hidden in the main thread
+        self.after(0, self.hide_loading)  # Hide loading window
+        # Ensure threats are displayed in the main thread after processing
         self.after(0, self.display_threats, self.page)
-        
-        # Hide loading screen after the task is complete
-        self.after(0, self.hide_loading)
 
     async def _process_threat_action(self, action: str, threat_dict):
         result = self.controller.handle_threat_action(threat_dict, action)
@@ -137,9 +136,7 @@ class PanelThreats(tk.Frame):
 
     def hide_loading(self):
         """Close the loading window."""
-        if hasattr(self, "loading_window"):
-            self.loading_window.destroy()
-
+        self.loading_window.destroy()
     def update_pagination(self):
         total_threats = self.controller.get_total_threats()
         total_pages = (total_threats + self.per_page - 1) // self.per_page

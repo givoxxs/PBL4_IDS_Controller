@@ -11,7 +11,9 @@ def main():
     controller = IDSController(root)
     view = MainWindow(root, controller)
     view.pack(fill="both", expand=True)
-    view.run()
+    view.run()  # Call view.run() to start setup, before root.mainloop()
+    root.mainloop()  # Start the Tkinter main loop after setup
+
 
 if __name__ == "__main__":
     main()

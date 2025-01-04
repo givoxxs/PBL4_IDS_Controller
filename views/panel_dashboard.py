@@ -205,7 +205,7 @@ class PanelDashboard(tk.Frame):
             if self.alerts:
                 high_priority_alerts = [
                     alert for alert in self.alerts
-                    if not alert.action_taken and (alert.occurrence > 20 or alert.priority <= 2)
+                    if not alert.action_taken and (alert.occur > 20 or alert.priority <= 2)
                 ]
                 if high_priority_alerts and self.active_popup is None:
                    self.after(0, lambda alerts=high_priority_alerts: self.show_threat_popup(alerts))
@@ -220,12 +220,12 @@ class PanelDashboard(tk.Frame):
             alert_frame = ttk.LabelFrame(self.active_popup, text=f"Alert ID: {alert.id}")
             alert_frame.pack(pady=5, padx=10, fill=tk.X)
             
-            ttk.Label(alert_frame, text=f"Time: {alert.time}").pack(anchor=tk.W)
-            ttk.Label(alert_frame, text=f"Source IP: {alert.source_ip}").pack(anchor=tk.W)
-            ttk.Label(alert_frame, text=f"Destination IP: {alert.destination_ip}").pack(anchor=tk.W)
-            ttk.Label(alert_frame, text=f"Rule: {alert.rule_name}").pack(anchor=tk.W)
+            ttk.Label(alert_frame, text=f"Time: {alert.timestamp}").pack(anchor=tk.W)
+            ttk.Label(alert_frame, text=f"Source IP: {alert.src_IP}").pack(anchor=tk.W)
+            ttk.Label(alert_frame, text=f"Destination IP: {alert.dst_IP}").pack(anchor=tk.W)
+            ttk.Label(alert_frame, text=f"Rule: {alert.msg}").pack(anchor=tk.W)
             ttk.Label(alert_frame, text=f"Priority: {alert.priority}").pack(anchor=tk.W)
-            ttk.Label(alert_frame, text=f"Occurrence: {alert.occurrence}").pack(anchor=tk.W)
+            ttk.Label(alert_frame, text=f"Occurrence: {alert.occur}").pack(anchor=tk.W)
             
             # Create action buttons for each alert
             action_frame = tk.Frame(alert_frame)
@@ -233,7 +233,7 @@ class PanelDashboard(tk.Frame):
             
             actions = ["Safe", "Limit", "Block", "Ignore"]
             for action in actions:
-                button = ttk.Button(action_frame, text=action, command=lambda a=action, alert_id = alert.id: self.handle_action(alert_id, a))
+                button = ttk.Button(action_frame, text=action, command=lambda a=action, alert=alert: self.handle_action(alert, a))
                 button.pack(side=tk.LEFT, padx=2)
 
 
@@ -242,11 +242,11 @@ class PanelDashboard(tk.Frame):
             self.active_popup.destroy()
             self.active_popup = None
 
-    def handle_action(self, alert_id, action):
+    def handle_action(self, alert, action):
         """Handles actions taken on a threat (e.g., Safe, Limit, Block, Ignore)."""
         # Logic to handle action
-        print(f"Action: {action} for alert ID: {alert_id}")
-        self.controller.handle_alert_action(alert_id,action)
+        print(f"Action: {action} for alert ID: {alert.id}")
+        self.controller.handle_alert_action(alert,action.lower())
         self.close_popup() # Close popup after user has chosen an action
         self.refresh_data()
     

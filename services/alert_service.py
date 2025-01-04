@@ -15,8 +15,8 @@ class AlertService:
         """
         Helper function to update an alert's action status and update the db
         """
-        alert.action_taken = True
-        alert.action = action
+        alert.action_taken = 1
+        alert.action = action.title()
         self.data_manager.update_alert(alert)
         
         return action_result if action_result else AlertService.SUCCESS_MESSAGE
@@ -50,11 +50,11 @@ class AlertService:
         """Marks an alert as ignored without taking any specific action."""
         return self._handle_alert_action(action, alert, AlertService.IGNORE_MESSAGE)
 
-    def limit_alert(action, self, alert: Alert):
+    def limit_alert(self, action, alert: Alert):
         """Limits traffic specified in alert using UFW."""
         command = f"sudo ufw limit proto {alert.protocol.lower()} from {alert.src_IP} to {alert.dst_IP}"
         result = self._execute_ufw_command(command)
-        return self._handle_alert_action(action, lert, result)
+        return self._handle_alert_action(action, alert, result)
     
     def block_alert(self, action, alert: Alert):
         """Blocks traffic specified in alert using UFW."""
