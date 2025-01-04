@@ -1,3 +1,4 @@
+import json
 from models.data_manager import DataManager
 from models.alert import Alert
 from services.alert_service import AlertService
@@ -20,6 +21,11 @@ class IDSController:
 
     def __init__(self, root):
         self.root = root
+        self.config = {
+            "update_interval": 300000,
+            "max_listbox_items": 20,
+            # ... other default settings
+        }
         self.data_manager = DataManager(root)
         self.alert_service = AlertService(root)
         self.thread_pool_executor = ThreadPoolExecutor(max_workers=os.cpu_count() * 2)
