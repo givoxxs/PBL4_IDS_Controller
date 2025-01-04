@@ -1,129 +1,163 @@
-# views/panel_threats.py
 import tkinter as tk
 from tkinter import ttk
 from tkinter import messagebox as mb
 from controllers.ids_controller import IDSController
+import logging
+import time
+import asyncio
+from threading import Thread
+
+logger = logging.getLogger(__name__)
 
 class PanelThreats(tk.Frame):
-
     def __init__(self, parent, controller: IDSController):
         super().__init__(parent)
         self.controller = controller
-        self.page = 1 # Khởi tạo page
-        self.per_page = 100 # mỗi trang 100 dòng
+        self.page = 1
+        self.per_page = 10
+        self.default_max_priority = 3  # set the default value here
         self.create_widgets()
-        self.display_threats() # Hiển thị threats ban đầu
+        self.display_threats()
 
     def create_widgets(self):
-        """Tạo các widget cho Panel Threats."""
-
-        # Tạo Treeview
-        columns = ("Source IP", "Destination IP", "Protocol", "Priority", "Occurrences", "Last Seen") # Thêm cột Last Seen
+        columns = (
+            "Source IP",
+            "Destination IP",
+            "Protocol",
+            "Action Taken",
+            "Priority",
+            "Occurrences",
+            "Last Seen",
+        )
         self.tree = ttk.Treeview(self, columns=columns, show="headings")
         for col in columns:
             self.tree.heading(col, text=col)
             self.tree.column(col, width=100)
         self.tree.pack(fill="both", expand=True)
-        
-        # Frame chứa các nút bấm và phân trang
+
         button_frame = tk.Frame(self)
         button_frame.pack()
 
+        self.prev_button = ttk.Button(
+            button_frame, text="Previous", command=self.prev_page, state=tk.DISABLED
+        )
+        self.prev_button.pack(side=tk.LEFT)
 
-        self.prev_button = ttk.Button(button_frame, text="Previous", command=self.prev_page, state = tk.DISABLED) # vô hiệu hóa ban đầu
-        self.prev_button.pack(side = tk.LEFT)
-
-        self.page_label = tk.Label(button_frame, text="Page 1/1") # Thêm page_label
+        self.page_label = tk.Label(button_frame, text="Page 1/1")
         self.page_label.pack(side=tk.LEFT)
 
-        self.next_button = ttk.Button(button_frame, text="Next", command=self.next_page)
-        self.next_button.pack(side = tk.LEFT)
-
+        self.next_button = ttk.Button(
+            button_frame, text="Next", command=self.next_page
+        )
+        self.next_button.pack(side=tk.LEFT)
 
         actions = ["safe", "ignore", "limit", "block"]
         for action in actions:
-            button = ttk.Button(button_frame, text=action.capitalize(), command = lambda action=action: self.handle_threat_action(action) )
-            button.pack(side=tk.LEFT, padx=5, pady = 5)
+            button = ttk.Button(
+                button_frame,
+                text=action.capitalize(),
+                command=lambda action=action: self.handle_threat_action(action),
+            )
+            button.pack(side=tk.LEFT, padx=5, pady=5)
 
-
-    def display_threats(self, page = 1):
-        """Hiển thị danh sách các mối đe dọa."""
-        threats = self.controller.get_threats()
-        current_threats = {}  # Lưu trữ threat hiện có trên Treeview
-        
-        self.page = page # set page hiện tại
-        self.update_pagination() # tính toán số trang
-
-        # Lấy danh sách các item hiện có trên Treeview
+    def display_threats(self, page=1):
+        logger.info("Loading panel threats")
         for item in self.tree.get_children():
-            values = self.tree.item(item)['values']
-            key = (values[0], values[1], values[2])  # Tạo key từ src_IP, dst_IP, protocol
-            current_threats[key] = item
-
-        # Cập nhật Treeview
-        for threat in threats:
-            key = (threat["src_IP"], threat["dst_IP"], threat["protocol"]), threat["priority"]
-            if key in current_threats:
-                # Cập nhật threat hiện có
-                item = current_threats[key]
-                self.tree.item(item, values=(threat["src_IP"], threat["dst_IP"], threat["protocol"], threat["priority"], threat["occur"], threat['last_seen']))
-                del current_threats[key]  # Xóa khỏi current_threats
-            else:
-                # Thêm threat mới
-                self.tree.insert("", tk.END, values=(threat["src_IP"], threat["dst_IP"], threat["protocol"], threat["priority"],threat["occur"], threat['last_seen']))
-
-        # Xóa các threat không còn tồn tại
-        for item in current_threats.values():
             self.tree.delete(item)
 
+        offset = (page - 1) * self.per_page
+        threats = self.controller.get_threats(limit=self.per_page, offset=offset, priority=self.default_max_priority)
+        self.page = page
+        self.update_pagination()
+
+        for threat in threats:
+            self.tree.insert(
+                "",
+                tk.END,
+                values=(
+                    threat["src_IP"],
+                    threat["dst_IP"],
+                    threat["protocol"],
+                    threat.get("action_taken", 0),
+                    threat.get("priority", "N/A"),
+                    threat["occur"],
+                    threat["last_seen"],
+                ),
+            )
+
     def handle_threat_action(self, action: str):
-        """Xử lý hành động của người dùng trên threat."""
-        res = mb.askquestion("Confirm", action.title() + " this threat? ")
-    
-        if res == 'yes':
-            selected_item = self.tree.selection() # lấy threat được chọn    
+        res = mb.askquestion("Confirm", f"{action.title()} this threat?")
+        if res == "yes":
+            selected_item = self.tree.selection()
             if selected_item:
-                threat_data = self.tree.item(selected_item[0])["values"]  # Lấy dữ liệu threat
-                # Chuyển đổi threat_data thành dictionary để dễ xử lý
+                threat_data = self.tree.item(selected_item[0])["values"]
                 threat_dict = {
                     "src_IP": threat_data[0],
                     "dst_IP": threat_data[1],
                     "protocol": threat_data[2],
-                    "priority": threat_data[3],
-                    "occur": threat_data[4],
-                    "last_seen": threat_data[5]
+                    "priority": threat_data[4],
+                    "action_taken": threat_data[3],
+                    "occur": threat_data[5],
+                    "last_seen": threat_data[6],
                 }
-                result = self.controller.handle_threat_action(threat_dict, action)  # Gọi controller để xử lý
-                print(result) # or show messagebox
-                self.display_threats() # update treeview
-        else:
-            pass
- 
-    def update_pagination(self):
-        """Cập nhật thông tin phân trang."""
 
-        total_threats = self.controller.get_total_threats()  # Lấy tổng số threats
-        total_pages = (total_threats + self.per_page - 1) // self.per_page  # Tính tổng số trang
+                self.show_loading()
+                # Run in a separate thread
+                Thread(
+                    target=self.run_async_action,
+                    args=(action, threat_dict),
+                    daemon=True,
+                ).start()
+
+    def run_async_action(self, action, threat_dict):
+        """Wrapper to run the asyncio event loop."""
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+        result = loop.run_until_complete(self._process_threat_action(action, threat_dict))
+        loop.close()
+
+        # Make sure to run this code in the main thread to update the UI
+        self.after(0, self.display_threats, self.page)
+        
+        # Hide loading screen after the task is complete
+        self.after(0, self.hide_loading)
+
+    async def _process_threat_action(self, action: str, threat_dict):
+        result = self.controller.handle_threat_action(threat_dict, action)
+        logger.info(f"Action {action}: {result}")
+        return result
+
+    def show_loading(self):
+        self.loading_window = tk.Toplevel(self)
+        self.loading_window.title("Loading...")
+        self.loading_window.resizable(False, False)
+
+        label = tk.Label(self.loading_window, text="Please wait...", font=("Helvetica", 12))
+        label.pack(padx=20, pady=20)
+
+    def hide_loading(self):
+        """Close the loading window."""
+        if hasattr(self, "loading_window"):
+            self.loading_window.destroy()
+
+    def update_pagination(self):
+        total_threats = self.controller.get_total_threats()
+        total_pages = (total_threats + self.per_page - 1) // self.per_page
         self.page_label.config(text=f"Page {self.page}/{total_pages}")
 
-        # Enable/disable prev/next buttons
         self.prev_button.config(state=tk.NORMAL if self.page > 1 else tk.DISABLED)
-        self.next_button.config(state=tk.NORMAL if self.page < total_pages else tk.DISABLED)
-        
-    # Thêm các hàm prev_page, next_page tương tự như PanelLogs
+        self.next_button.config(
+            state=tk.NORMAL if self.page < total_pages else tk.DISABLED
+        )
+
     def prev_page(self):
-        """Chuyển đến trang trước."""
         if self.page > 1:
             self.page -= 1
-            self.display_threats(self.page) # Refresh data
-            self.update_pagination() # Update buttons
-    
+            self.display_threats(self.page)
+
     def next_page(self):
-        """Chuyển đến trang sau."""
         total_threats = self.controller.get_total_threats()
         total_pages = (total_threats + self.per_page - 1) // self.per_page
         if self.page < total_pages:
             self.page += 1
             self.display_threats(self.page)
-            self.update_pagination()
-    

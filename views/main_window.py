@@ -4,21 +4,25 @@ from views.panel_status import PanelStatus
 from views.panel_logs import PanelLogs
 from views.panel_threats import PanelThreats
 from views.panel_config import PanelConfig
-from views.panel_dashboard import PanelDashboard 
+from views.panel_dashboard import PanelDashboard # Import PanelDashboard
+from views.panel_handled import PanelHandled
 from config.settings import Settings
+from controllers.ids_controller import IDSController
 
 class MainWindow(tk.Frame):
-    def __init__(self, parent, controller):
+    def __init__(self, parent, controller: IDSController):
         super().__init__(parent)
         self.controller = controller
         self.root = parent
         self.root.title(Settings.APP_TITLE)
         self.root.geometry(f"{Settings.APP_WIDTH}x{Settings.APP_HEIGHT}")
+        # Đăng ký sự kiện đóng cửa sổ
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
         self.create_widgets()
-        
+
     def update_alerts_from_file(self):
         """Callback function for updating alerts."""
-        self.controller.data_manager.update_alerts_from_file()
+        self.controller.update_alerts_from_file()
         self.refresh_data() # Refresh all panels
         self.after_id = self.after(self.controller.data_manager.update_interval, self.update_alerts_from_file)
 
@@ -64,6 +68,9 @@ class MainWindow(tk.Frame):
         self.notebook.add(panel_config, text="Config")
         self.frames["config"] = panel_config
 
+        panel_handled = PanelHandled(self.notebook, self.controller)
+        self.notebook.add(panel_handled, text="Handled Attack")
+        self.frames["handled"] = panel_handled
 
 
     def show_frame(self, frame_name):
@@ -74,9 +81,10 @@ class MainWindow(tk.Frame):
             
     def refresh_data(self):
         """Refresh data and update panels."""
-        self.frames["logs"].display_alerts(self.frames["logs"].current_protocol_filter)
+        self.frames["logs"].display_alerts()
         self.frames["threats"].display_threats()
         self.frames['dashboard'].update_data()
+        self.frames['handled'].display_alerts(filter_criteria={'action_taken': 1})
 
     def run(self):
         """Chạy ứng dụng."""
@@ -87,3 +95,8 @@ class MainWindow(tk.Frame):
         self.data_manager.update_interval = self.data_manager._config.get("update_interval", 60) * 1000
         self.after_id = self.after(self.data_manager.update_interval, self.update_alerts_from_file)
         self.mainloop()
+    def on_close(self):
+        """Hàm xử lý khi đóng cửa sổ."""
+        if hasattr(self, 'after_id'):
+            self.root.after_cancel(self.after_id)
+        self.root.quit()  # Dừng vòng lặp mainloop và thoát

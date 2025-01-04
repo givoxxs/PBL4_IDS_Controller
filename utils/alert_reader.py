@@ -5,8 +5,19 @@ import os
 logger = logging.getLogger(__name__)
 
 class AlertReader:
-    def __init__(self, file_path):
+    """
+    Đọc file CSV chứa thông tin alert và tạo đối tượng Alert.
+    """
+    def __init__(self, file_path, separator=","):
+        """
+        Khởi tạo đối tượng AlertReader.
+
+        Args:
+            file_path (str): Đường dẫn đến file CSV.
+            separator (str, optional): Ký tự phân tách giữa các trường trong file CSV. Mặc định là ','.
+        """
         self.file_path = file_path
+        self.separator = separator  # Gán giá trị separator vào đối tượng
 
     def read_alerts(self, last_update_time=0):
         alerts = []
@@ -27,40 +38,59 @@ class AlertReader:
         except Exception as e:
             logger.error(f"Lỗi khi đọc file: {e}", exc_info=True)
             return None
-        
+
+    def _validate_header(self, header):
+        """
+        Kiểm tra header của file CSV.
+
+        Args:
+            header (str): Dòng tiêu đề của file CSV.
+
+        Returns:
+            bool: True nếu header hợp lệ, False nếu không.
+        """
+        expected_header = "timestamp,action,protocol,gid,sid,rev,msg,service,src_IP,src_Port,dst_IP,dst_Port,priority"
+        return header.strip().lower() == expected_header.lower()
+
     def _parse_alert_line(self, line):
-        """Phân tích một dòng trong file alert_csv.txt."""
-        data = line.split(",")
+        """
+        Phân tích một dòng trong file alert_csv.txt.
 
-        # Kiểm tra số lượng trường dữ liệu.  Điều chỉnh số 12 nếu file của bạn có số trường khác.
-        if len(data) < 13:  # Cho phép số trường ít hơn 13
-            print(f"Invalid alert line: {line}. Not enough fields.")
-            logger.error(f"Invalid alert line: {line}. Not enough fields.")
+        Args:
+            line (str): Dòng dữ liệu cần phân tích.
+
+        Returns:
+            tuple: Dữ liệu đã phân tích, hoặc None nếu có lỗi.
+        """
+        data = line.split(self.separator)
+        if len(data) < 13:
+            logger.error(f"Invalid alert line: {line}. Số trường ({len(data)}) < 13")
             return None
 
-        try:
-            # Xử lý các trường có thể bị thiếu hoặc rỗng.  Sử dụng giá trị mặc định nếu cần.
-            timestamp = data[0].strip()
-            action = data[1].strip()
-            protocol = data[2].strip()
-            gid = int(data[3]) if data[3] else None
-            sid = int(data[4]) if data[4] else None
-            rev = int(data[5]) if data[5] else None
-            msg = data[6].strip('"') # Loại bỏ dấu ngoặc kép
-            service = data[7].strip()
-            src_IP = data[8].strip()
-            # src_Port = int(data[9]) if data[9] else None
-            dst_IP = data[10].strip()
-            # dst_Port = int(data[11]) if data[11] else None
-            
-            src_Port = int(data[9].strip()) if data[9].strip() else None # Strip before checking
-            dst_Port = int(data[11].strip()) if data[11].strip() else None # Strip before checking
-            priority = int(data[12].strip()) if data[12].strip() else 3
-            occur = 1
-            action_taken = 0
-            return (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority, occur, action_taken)
+        timestamp = data[0].strip()
+        action = data[1].strip()
+        protocol = data[2].strip()
+        gid = int(data[3].strip()) if data[3].strip() else -1
+        sid = int(data[4].strip()) if data[4].strip() else -1
+        rev = int(data[5].strip()) if data[5].strip() else -1
+        msg = data[6].strip('"')
+        service = data[7].strip()
+        src_IP = data[8].strip()
+        src_Port = int(data[9].strip()) if data[9].strip() else -1
+        dst_IP = data[10].strip()
+        dst_Port = int(data[11].strip()) if data[11].strip() else -1
 
+        # Lấy giá trị priority từ chỉ mục 12
+        priority = data[12].strip('"')
 
-        except (ValueError, IndexError) as e:
-            logger.error(f"Error parsing alert line: {line} - {e}")
-            return None
+        valid_priorities = ["0", "1", "2", "3"]
+
+        if priority not in valid_priorities:
+            logger.warning(f"Invalid priority: {priority}, using default '3'")
+            priority = "3"
+
+        occur = 1
+        action_taken = 0
+        last_seen = None
+
+        return (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority, occur, action_taken, last_seen)

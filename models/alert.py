@@ -1,12 +1,10 @@
-# import modify_files as mf
-from utils.file_modifier import FileModifier as mf
-
 class Alert:
     """
     Class Alert represents a specific suspicious traffic,
     which can be blocked with a Snort or firewall rule.
     """
-    def __init__(self, timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority = 3, occur=1, action_taken=False, id=None):
+
+    def __init__(self,timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority, occur, action_taken, last_seen):
         self.timestamp = timestamp
         self.action = action
         self.protocol = protocol
@@ -22,7 +20,7 @@ class Alert:
         self.priority = priority
         self.occur = occur
         self.action_taken = action_taken
-        self.id = id
+        self.last_seen = last_seen  # Mới thêm tham số này
 
     def __eq__(self, other):
         return (
@@ -68,6 +66,7 @@ class Alert:
             "occur": self.occur,
             "action_taken": self.action_taken,
         }
+
 
     def to_csv_form(self):
         return f"{self.src_IP},{self.dst_IP},{self.protocol},{self.priority},{self.occur},{self.action_taken}"

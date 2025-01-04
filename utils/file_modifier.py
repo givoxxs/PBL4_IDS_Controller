@@ -19,17 +19,20 @@ class FileModifier:
             return {}  # Trả về dictionary rỗng nếu có lỗi
 
     def add_local_rule(self, new_rule):
-        """Thêm rule vào file local.rules."""
+        """Thêm rule vào file local.rules với quyền sudo."""
         sid = self.get_sid()
         new_rule = new_rule.replace("sid:{}", f"sid:{sid};")
+        command = f"echo '{new_rule}' | sudo tee -a {self.rules_path}"
+
         try:
-            with open(self.rules_path, 'a') as file:
-                file.write(new_rule + '\n')
+            # Thực thi lệnh sudo
+            result = subprocess.run(command, shell=True, check=True, text=True, stderr=subprocess.PIPE)
             
+            # Cập nhật SID
             self.update_sid(sid + 1)
             return "Rule added successfully"
-        except (PermissionError, OSError) as e:  # Bắt thêm OSError
-            return f"Error adding rule: {e}"
+        except subprocess.CalledProcessError as e:
+            return f"Error adding rule: {e.stderr}"
         except Exception as e:
             return f"Error occurred: {str(e)}"
     
@@ -50,10 +53,10 @@ class FileModifier:
     def reload_ufw(self):        
         """Reload UFW (Ubuntu)."""
         try:
-            result = subprocess.run(['ufw', 'disable'], capture_output=True, text=True, check=True) # check=True để raise exception nếu lỗi
-            print(result.stdout) # In ra output nếu cần
-            result = subprocess.run(['ufw', 'enable'], capture_output=True, text=True, check=True)
-            print(result.stdout)
+            result = subprocess.run(['sudo', 'ufw', 'disable'], capture_output=True, text=True, check=True) # check=True để raise exception nếu lỗi
+            print(f"From file_modifier, {result.stdout}") # In ra output nếu cần
+            result = subprocess.run(['sudo','ufw', 'enable'], capture_output=True, text=True, check=True)
+            print(f"From file_modifier, {result.stdout}")
             return "UFW reloaded successfully"
         except subprocess.CalledProcessError as e:
             print(f"Lỗi khi reload UFW: {e}")
