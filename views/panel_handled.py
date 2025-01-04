@@ -72,6 +72,7 @@ class PanelHandled(tk.Frame):
                     action_taken=alert_dict.get("action_taken", "Unknown"),
                     priority=alert_dict.get("priority", "Unknown"),
                     occur=alert_dict.get("occur", 0),
+                    last_seen= alert_dict.get("last-seen", "Unkown")
                 )
                 self.tree.insert("", tk.END, values=alert.to_tuple())
             except Exception as e:
