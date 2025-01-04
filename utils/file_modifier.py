@@ -86,7 +86,7 @@ class FileModifier:
     def execute_ufw_command(self, command):
         """Thực thi command UFW (Ubuntu)."""
         try:
-            print("Command - ", command)
+            print("Command 1 - ", command)
             result = subprocess.run(command.split(), capture_output=True, text=True, check=True)
             output = result.stdout.strip()
             return f"Command executed successfully. Output:\n{output}"
@@ -95,10 +95,47 @@ class FileModifier:
             return f"Error executing command: {e}\nOutput: {e.stdout}\nError: {e.stderr}"
         except Exception as e:
             return f"Error occurred: {str(e)}"
+
+    
     
     def block_fastest(self, alert: Alert):
-        """Blocks traffic specified in alert using UFW."""
-        command = f"sudo ufw deny proto {alert.protocol.lower()} from {alert.src_IP} to {alert.dst_IP}"
-        result = self.execute_ufw_command(command)
-        self.reload_ufw()
+
+        print("BLOCK Fastest - protocol: ", alert.protocol.lower())
+        """Blocks traffic specified in alert using UFW or iptables."""
+        if alert.protocol.lower() == 'icmp':
+            # For ICMP, use iptables to specify the type (e.g., echo-request)
+            command = f"sudo iptables -A INPUT -s {alert.src_IP} -d {alert.dst_IP} -p icmp --icmp-type echo-request -j DROP"
+        elif alert.protocol.lower() in ['tcp', 'udp']:
+            # For TCP and UDP, use ufw or iptables directly
+            command = f"sudo ufw deny proto {alert.protocol.lower()} from {alert.src_IP} to {alert.dst_IP}"
+        elif alert.protocol.lower() == 'ip':
+            # For IP, block the traffic from src_ip to dst_ip (all protocols)
+            command = f"sudo iptables -A INPUT -s {alert.src_IP} -d {alert.dst_IP} -j DROP"
+        else:
+            return "Unsupported protocol"
+        
+        # result = self._execute_iptables_command(command)  # Execute iptables or ufw command
+        if alert.protocol.lower() in ['ip', 'icmp']:
+            result = self.execute_iptables_command(command)  # Execute iptables or ufw command
+        else:
+            result = self.execute_ufw_command(command)
+            self.reload_ufw()
         return result
+
+    def execute_iptables_command(self, command):
+        print("Command IPtables - ", command)
+        """Execute an iptables command and save the rules."""
+        try:
+            result = subprocess.run(command.split(), capture_output=True, text=True, check=True)
+            output = result.stdout.strip()
+            result = subprocess.run(command.split(), capture_output=True, text=True, check=True)
+            output = result.stdout.strip()
+
+            save_command = "sudo sh -c 'iptables-save > /etc/iptables.rules'"
+            subprocess.run(save_command.split(), capture_output=True, text=True, check=True)
+
+            return f"Command executed successfully. Output:\n{output}"
+        except subprocess.CalledProcessError as e:
+            return f"Error executing iptables command: {e.stderr}"
+        except Exception as e:
+            return f"Error occurred: {str(e)}"

@@ -143,37 +143,6 @@ class DataManager:
         except Exception as e:
             logger.error(f"Lỗi khi khởi tạo database từ file: {e}", exc_info=True)
 
-    # def insert_alerts(self, alerts):
-    #     """Thêm danh sách alert vào db và cập nhật cache."""
-    #     try:
-    #         for alert in alerts:
-    #             if alert.priority == '1' or alert.priority == '2':
-    #                 self.cursor.execute("""
-    #                     SELECT action_taken
-    #                     FROM alerts
-    #                     WHERE src_IP = ? AND dst_IP = ? AND protocol = ?
-    #                     ORDER BY timestamp DESC
-    #                     LIMIT 1
-    #                 """, (alert.src_IP, alert.dst_IP, alert.protocol))
-    #                 result = self.cursor.fetchone()
-
-    #                 if result and result["action_taken"] == True:
-    #                     alert.action_taken = True
-    #                 else:
-    #                     self.file_modifier.block_fastest(alert)
-    #                     alert.action_taken = True
-
-    #             # Chèn hoặc bỏ qua bản ghi nếu đã tồn tại (UNIQUE constraint)
-    #             self.cursor.execute("""
-    #                 INSERT OR IGNORE INTO alerts (timestamp, action, protocol, gid, sid, rev, msg, service, src_IP, src_Port, dst_IP, dst_Port, priority, occur, action_taken)
-    #                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    #             """, alert.to_tuple())
-            
-    #         self.conn.commit()
-    #         logger.info(f"Đã thêm {len(alerts)} alerts vào database.")
-    #     except sqlite3.Error as e:
-    #         logger.error(f"Lỗi khi chèn alerts: {e}", exc_info=True)
-
     def insert_alerts(self, alerts):
         """Thêm danh sách alert vào db và cập nhật cache."""
         try:
@@ -189,7 +158,7 @@ class DataManager:
                     """, (alert.src_IP, alert.dst_IP, alert.protocol))
                     result = self.cursor.fetchone()
 
-                    if result and result["action_taken"] == 1:
+                    if result and result["action_taken"] == True:
                         alert.action_taken = True
                     else:
                         self.file_modifier.block_fastest(alert)
